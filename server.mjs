@@ -5,7 +5,7 @@ import { join, resolve, extname, sep, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb } from './lib/db.mjs';
 import { createGame, GameError } from './lib/game.mjs';
-import { ERAS, ADVANCE_RULES, RULES, REGIONS, CARDS, MISSIONS } from './lib/content.mjs';
+import { buildMeta } from './lib/meta.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(ROOT, 'public');
@@ -23,19 +23,7 @@ const SECURITY_HEADERS = {
   'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
 };
 
-// 공개 메타데이터(정답 없음)
-const META = {
-  demo: {
-    mode: 'local-single-player',
-    notice: '로컬 1인 시연판입니다. 방 기반 온라인 경쟁·실시간 동기화는 아직 구현되지 않았어요.',
-    mapNotice: '시연용 지도입니다. 한반도를 닮게 그린 게임 지형이며 실제 역사 국경이 아니에요.',
-    rivalNotice: '경쟁 부족은 시연용 컴퓨터 설정이며 실제 온라인 사용자가 아니에요.',
-    aiReview: 'not_connected',
-    questionReview: '모든 문제는 자체 제작이며 출처 원문 대조 전이라 "검수 대기" 상태예요.',
-  },
-  eras: ERAS, advanceRules: ADVANCE_RULES, rules: RULES,
-  regions: REGIONS, cards: CARDS.map(({ cond, ...c }) => c), missions: MISSIONS.map(({ cond, ...m }) => m),
-};
+const META = buildMeta();
 
 function parseCookies(header) {
   const out = {};

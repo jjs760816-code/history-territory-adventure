@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test \"test/**/*.test.mjs\""
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "build:pages": "node scripts/build-pages.mjs"
   }
 }

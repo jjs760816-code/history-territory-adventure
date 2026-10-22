@@ -6,6 +6,16 @@
 > 지도의 "경쟁 부족"은 시연용 컴퓨터 설정이며 실제 온라인 사용자가 아니다.
 > 지도는 한반도를 닮게 독자 제작한 **시연용 지형**이며 실제 역사 국경이 아니다.
 
+## 웹 1인 체험판 (GitHub Pages)
+
+바로 해 보기: https://jjs760816-code.github.io/history-territory-adventure/
+
+- 설치 없이 브라우저에서 실행된다. `main`에 올라오면 GitHub Actions(`.github/workflows/pages.yml`)가 `npm test` 통과 후 `node scripts/build-pages.mjs`로 `dist/`를 만들어 배포한다.
+- 게임 규칙(`lib/game.mjs`)·콘텐츠·화면(`public/`)은 로컬 서버판과 같은 파일을 쓴다. 차이는 저장소와 판정 위치뿐이다.
+  - 저장: `node:sqlite` 대신 sql.js(SQLite WASM, MIT, `pages/vendor/`에 포함)를 쓰고, DB를 **그 브라우저의 localStorage**에 보관한다. 다른 기기·브라우저와 공유되지 않는다.
+  - 판정: 브라우저 안에서 한다. 문제은행이 함께 내려가므로 소스를 열면 정답을 볼 수 있다. **수업용 정식 판정은 로컬 서버판(`npm start`)을 쓴다.**
+- 로컬에서 빌드만 해 보기: `npm run build:pages` → `dist/` (커밋하지 않음)
+
 ## 실행
 
 Node.js 24 이상. 외부 의존성 없음(내장 `node:http`, `node:crypto`, `node:sqlite`만 사용).
