@@ -1,0 +1,14 @@
+{
+  "name": "history-territory-adventure",
+  "version": "0.1.0",
+  "private": true,
+  "description": "역사 영토 원정대 — 초등 한국사 학습 지도 게임 (로컬 1인 시연판)",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test \"test/**/*.test.mjs\""
+  }
+}

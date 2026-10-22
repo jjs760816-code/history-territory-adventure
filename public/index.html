@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>역사 영토 원정대 — 로컬 시연판</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>역사 영토 원정대</h1>
+    <p class="demo-badge" id="demoNotice">로컬 1인 시연판 · 온라인 경쟁 미구현</p>
+    <nav class="topnav" id="topnav" hidden>
+      <button type="button" data-open="cardsDialog">카드 도감</button>
+      <button type="button" data-open="historyDialog">학습 기록·복습</button>
+      <button type="button" data-open="createDialog">문제 만들기</button>
+      <button type="button" data-open="rulesDialog">규칙</button>
+      <button type="button" id="logoutBtn" class="ghost">처음으로</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="startScreen" class="start card-panel">
+      <h2>원정대를 꾸려 볼까요?</h2>
+      <p>문제를 풀어 지역을 얻고, 구석기에서 신석기, 청동기·고조선으로 문명을 발전시켜요.</p>
+      <form id="startForm" autocomplete="off">
+        <label for="nickname">닉네임 (한글·영문·숫자 2~12자, 실명은 쓰지 마세요)</label>
+        <input id="nickname" name="nickname" maxlength="12" minlength="2" required>
+        <button type="submit" class="primary big">원정 시작</button>
+        <p class="error" id="startError" role="alert"></p>
+      </form>
+      <ul class="notice-list" id="startNotices"></ul>
+    </section>
+
+    <section id="gameScreen" class="layout" hidden>
+      <aside class="panel left" aria-label="내 원정대 정보">
+        <h2 id="playerName"></h2>
+        <p class="era-badge" id="eraName"></p>
+        <p class="era-summary" id="eraSummary"></p>
+        <dl class="resources">
+          <div><dt>경험치</dt><dd id="resXp"></dd></div>
+          <div><dt>식량</dt><dd id="resGrain"></dd></div>
+          <div><dt>인구</dt><dd id="resPop"></dd></div>
+          <div><dt>국력</dt><dd id="resPower"></dd></div>
+          <div><dt>영토</dt><dd id="resLand"></dd></div>
+        </dl>
+        <h3>시대 발전</h3>
+        <div id="advanceBox"></div>
+        <h3>미션</h3>
+        <ul id="missionList" class="missions"></ul>
+      </aside>
+
+      <section class="map-wrap" aria-label="지도">
+        <p class="map-notice" id="mapNotice"></p>
+        <div class="map-tools">
+          <button type="button" id="zoomIn" aria-label="확대">＋</button>
+          <button type="button" id="zoomOut" aria-label="축소">－</button>
+          <button type="button" id="zoomReset">원래 크기</button>
+        </div>
+        <div class="map-frame">
+          <svg id="map" viewBox="60 10 300 575" role="group" aria-label="시연용 지역 지도"></svg>
+        </div>
+        <ul class="legend">
+          <li><span class="sw own"></span>★ 우리 영토</li>
+          <li><span class="sw neutral"></span>중립 지역</li>
+          <li><span class="sw rival"></span>⚑ 시연용 경쟁 부족(컴퓨터)</li>
+          <li><span class="sw locked"></span>🔒 아직 갈 수 없는 시대</li>
+        </ul>
+      </section>
+
+      <aside class="panel right" aria-label="지역 정보" id="regionPanel">
+        <h2>지역을 골라 보세요</h2>
+        <p>지도에서 지역을 누르면 정보와 도전 버튼이 나타나요.</p>
+      </aside>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="logoutDialog" class="dlg" aria-labelledby="logoutHeading">
+    <h2 id="logoutHeading">처음 화면으로 갈까요?</h2>
+    <p>이 브라우저의 원정 기록 연결이 끊겨요. 서버 기록은 남지만, 지금 원정대로 다시 들어오는 기능은 아직 없어요.</p>
+    <button type="button" data-close autofocus>취소</button>
+    <button type="button" id="logoutConfirmBtn">처음 화면으로</button>
+  </dialog>
+
+  <dialog id="quizDialog" class="dlg">
+    <div id="quizBody"></div>
+  </dialog>
+
+  <dialog id="cardsDialog" class="dlg wide">
+    <div class="dlg-head"><h2>카드 도감</h2><button type="button" class="close" data-close>닫기</button></div>
+    <p class="hint">카드는 문제를 풀고 지역을 점령하고 시대를 발전시키면 얻어요. 신화에서 온 카드는 "신화·설화"로 표시해요.</p>
+    <div id="cardGrid" class="card-grid"></div>
+  </dialog>
+
+  <dialog id="historyDialog" class="dlg wide">
+    <div class="dlg-head"><h2>학습 기록·복습</h2><button type="button" class="close" data-close>닫기</button></div>
+    <div class="history-actions">
+      <button type="button" id="reviewBtn" class="primary">틀린 문제 복습하기</button>
+      <span id="reviewInfo"></span>
+    </div>
+    <h3>학습 노트</h3>
+    <ul id="notesList" class="notes"></ul>
+    <h3>최근 풀이 기록</h3>
+    <ol id="attemptList" class="attempts"></ol>
+  </dialog>
+
+  <dialog id="createDialog" class="dlg wide">
+    <div class="dlg-head"><h2>문제 만들기</h2><button type="button" class="close" data-close>닫기</button></div>
+    <p class="hint warn">AI 검토는 연결되어 있지 않아요. 제출한 문제는 형식 검사만 거쳐 "검토 대기"로 저장되며, 승인 전에는 다른 문제처럼 출제되거나 점령 보상에 쓰이지 않아요.</p>
+    <form id="createForm" autocomplete="off">
+      <label>시대
+        <select name="era" id="createEra"></select>
+      </label>
+      <label>관련 지역(선택)
+        <select name="regionId" id="createRegion"><option value="">고르지 않음</option></select>
+      </label>
+      <label>문제 (10~200자)
+        <textarea name="question" maxlength="200" rows="2" required></textarea>
+      </label>
+      <fieldset>
+        <legend>보기 4개와 정답 (정답 보기의 동그라미를 고르세요)</legend>
+        <div class="choice-inputs" id="choiceInputs"></div>
+      </fieldset>
+      <label>쉬운 해설 (10~300자)
+        <textarea name="explanation" maxlength="300" rows="2" required></textarea>
+      </label>
+      <label>참고 자료 (책 이름, 박물관, 기관 누리집 주소 등)
+        <input name="source" maxlength="200" required>
+      </label>
+      <button type="submit" class="primary">형식 검사 후 제출</button>
+      <ul class="error" id="createErrors" role="alert"></ul>
+    </form>
+    <h3>내가 낸 문제</h3>
+    <ul id="mySubmissions" class="submissions"></ul>
+  </dialog>
+
+  <dialog id="rulesDialog" class="dlg wide">
+    <div class="dlg-head"><h2>규칙과 계산 방법</h2><button type="button" class="close" data-close>닫기</button></div>
+    <div id="rulesBody"></div>
+  </dialog>
+</body>
+</html>
