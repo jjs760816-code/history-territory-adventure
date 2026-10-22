@@ -68,7 +68,9 @@ async function boot() {
   $('mapNotice').textContent = META.demo.mapNotice;
   const notices = $('startNotices');
   for (const k of ['notice', 'rivalNotice', 'questionReview']) notices.append(el('li', { text: META.demo[k] }));
-  notices.append(el('li', { text: '저장은 이 컴퓨터의 서버(data 폴더)에만 돼요. 학생 실명·연락처는 받지 않아요.' }));
+  notices.append(el('li', { text: META.demo.storageNotice }));
+  if (META.demo.judgeNotice) notices.append(el('li', { text: META.demo.judgeNotice }));
+  $('demoNotice').textContent = META.demo.badge;
   setupStatic();
   try {
     STATE = await api('/api/state');
