@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Sitemap: https://history-exploration-one-online.james816.chatgpt.site/sitemap.xml
