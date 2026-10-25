@@ -7,11 +7,11 @@
   const current=state.player.era, states=new Map(state.missions.map(s=>[s.id,s]));
   const fresh=m=>!seen.has(m.id)&&!queued.has(m.id)&&['active','completed'].includes(states.get(m.id)?.status);
   const stage=missions.filter(m=>m.era===current), n=state.stats.uniqueCorrect[current]||0;
-  const core=stage.filter(m=>m.kind==='core'&&fresh(m)&&(m.required||n>=2));
+  const core=stage.filter(m=>m.kind==='core'&&fresh(m)&&m.required);
   const review=missions.filter(m=>m.id==='m_review'&&fresh(m)&&state.stats.reviewPending>0);
-  const announced=stage.filter(m=>m.kind!=='core'&&m.id!=='m_review'&&(seen.has(m.id)||queued.has(m.id))).length;
+  const announced=stage.filter(m=>!m.required&&m.id!=='m_review'&&(seen.has(m.id)||queued.has(m.id))).length;
   const allowance=Math.max(0,Math.floor(n/2)-announced);
-  const pool=stage.filter(m=>m.kind!=='core'&&m.id!=='m_review'&&fresh(m)).map(m=>({m,rank:-Math.log(uniform(`${state.player.ref}:${m.id}`))/Math.max(.01,m.recommendWeight||1)})).sort((a,b)=>a.rank-b.rank);
+  const pool=stage.filter(m=>!m.required&&m.id!=='m_review'&&fresh(m)&&(m.kind!=='core'||n>=2)).map(m=>({m,rank:-Math.log(uniform(`${state.player.ref}:${m.id}`))/Math.max(.01,m.recommendWeight||1)})).sort((a,b)=>a.rank-b.rank);
   return [...core,...review,...pool.slice(0,Math.min(2,allowance)).map(x=>x.m)].map(m=>m.id);
  }
  window.MissionRecommendations={select};

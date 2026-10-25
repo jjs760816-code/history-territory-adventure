@@ -522,7 +522,7 @@ button.ghost-light:hover { background: rgba(255,255,255,0.18); }
 .scene-cold { background-position: 30% 20%; filter: saturate(0.25) hue-rotate(160deg) brightness(0.9) contrast(1.05); }
 .scene-village { background-position: 78% 70%; }
 .scene-pollen { background-position: 60% 92%; background-size: 260%; filter: sepia(0.35) saturate(1.1); }
-.scene-adventure, .scene-tutorial { background: #1d322c url('assets/guide-haram.webp') center 8% / contain no-repeat, radial-gradient(circle at 50% 40%, #2d4a41, #12302b); }
+.scene-adventure, .scene-tutorial { background: #1d322c url('assets/guide-jams.webp') center 8% / contain no-repeat, radial-gradient(circle at 50% 40%, #2d4a41, #12302b); }
 .story-body { display: flex; flex-direction: column; gap: 0.4rem; padding: 1.2rem 1.3rem 1rem; max-height: 86vh; overflow: auto; }
 .story-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .story-body h2 { margin: 0; font-size: clamp(1.25rem, 2.6vw, 1.7rem); color: var(--pine); line-height: 1.35; }

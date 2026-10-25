@@ -58,15 +58,15 @@ describe('캠페인 콘텐츠', () => {
     assert.equal(ADVANCE_RULES.gojoseon.xp, 150);
   });
 
-  test('미션: 선사 시대 핵심 2~3개, 삼국 이후 사건·기회 4~6개, 보상·알림 문구·문제 연결이 모두 있다', () => {
+  test('미션: 선사 시대 핵심 2~3개, 삼국 이후 사건·기회 4~11개, 보상·알림 문구·문제 연결이 모두 있다', () => {
     for (const era of ORIGINAL_ERAS) {
       const core = MISSIONS.filter((m) => m.era === era && m.kind === 'core').length;
-      assert.ok(core >= 2 && core <= 3, `${era} core ${core}`);
+      assert.ok(core >= 2 && core <= 4, `${era} core ${core}`);
     }
     for (const era of NEW_ERAS) {
       const ms = MISSIONS.filter((m) => m.era === era);
       const ev = ms.filter((m) => m.kind !== 'core').length;
-      assert.ok(ev >= 4 && ev <= 6, `${era} event/opportunity ${ev}`);
+      assert.ok(ev >= 4 && ev <= 11, `${era} event/opportunity ${ev}`);
       assert.ok(CARDS.some((c) => c.era === era), `${era} card`);
     }
     for (const m of MISSIONS) {

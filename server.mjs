@@ -172,6 +172,11 @@ export function createApp({ dataDir = process.env.DATA_DIR || join(ROOT, 'data')
       const body = await readJson(req);
       return send(res, 200, game.answer(needPlayer(), body.challengeId, body.choiceIndex));
     }
+    if(path==='/api/market'&&method==='GET')return send(res,200,game.marketList(needPlayer()));
+    const marketRoutes={'/api/market':'marketPost','/api/market/accept':'marketAccept','/api/market/cancel':'marketCancel'};
+    if(method==='POST'&&Object.hasOwn(marketRoutes,path))return send(res,200,game[marketRoutes[path]](needPlayer(),await readJson(req)));
+    const devRoutes = {avatar:'avatarSave',avatarUpgrade:'avatarUpgrade',upgrade:'upgrade',harvest:'harvest',skill:'skill',nation:'formNation',defense:'startDefense',faction:'chooseFaction',collection:'startCollection',join:'joinNation'};
+    if (method === 'POST' && path.startsWith('/api/development/')) { const key=path.slice('/api/development/'.length); if(Object.hasOwn(devRoutes,key)) return send(res,200,game[devRoutes[key]](needPlayer(),await readJson(req))); }
     if (method === 'POST' && path === '/api/advance') {
       await readJson(req);
       return send(res, 200, game.advance(needPlayer()));

@@ -1,0 +1,1 @@
+{"name": "history-online-server", "private": true, "type": "module", "dependencies": {"sql.js": "1.13.0", "esbuild": "0.25.12"}, "scripts": {"build": "node scripts/bundle.mjs", "validate": "node scripts/validate-artifact.mjs"}, "packageManager": "pnpm@11.25.0"}

@@ -9,13 +9,20 @@
   <script src="audio.js" defer></script>
   <script src="recommendations.js" defer></script>
   <script src="journey.js" defer></script>
+  <script src="development.js" defer></script>
+  <script src="skills.js" defer></script>
+  <script src="photos.js" defer></script>
+  <script src="auth.js" defer></script>
+  <script src="avatar.js" defer></script>
+  <script src="growth.js" defer></script>
   <script src="app.js" defer></script>
   <script src="inquiry.js" defer></script>
+  <link rel="stylesheet" href="development.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="brand-seal" aria-hidden="true">原</span>
+      <span class="brand-seal" aria-hidden="true">역</span>
       <div>
         <h1>역사 탐험 1</h1>
         <p class="brand-sub" id="demoNotice">로컬 1인 시연판 · 온라인 경쟁 미구현</p>
@@ -28,9 +35,10 @@
       <button type="button" data-open="historyDialog">학습 기록·복습</button>
       <button type="button" data-open="createDialog">문제 만들기</button>
       <button type="button" data-open="rulesDialog">규칙</button>
-      <button type="button" id="logoutBtn" class="ghost">처음으로</button>
+      <button type="button" id="logoutBtn" class="logout-button">로그아웃</button>
     </nav>
     <div class="utilnav" aria-label="자료와 소리">
+      <a href="game-room.html" class="game-room-link">역사랑 놀자 ↗</a>
       <button type="button" data-open="sourceDialog">지도·그림 출처</button>
       <button type="button" id="musicToggle" class="toggle" aria-pressed="false">배경음 꺼짐</button>
       <button type="button" id="sfxToggle" class="toggle" aria-pressed="false">효과음 꺼짐</button>
@@ -42,7 +50,7 @@
       <div class="hero-copy">
         <p class="eyebrow">구석기에서 대한민국까지 · 9개 시대</p>
         <h2 id="heroTitle">강과 산을 건너,<br>우리 역사의 첫 장으로</h2>
-        <p class="hero-lead">문제를 풀어 땅을 넓히고, 미션과 유물 카드를 모으며 원정대를 다음 시대로 이끌어 보세요.</p>
+        <p class="hero-lead">문제를 풀어 땅을 넓히고, 미션과 유물 카드를 모으며 탐험대를 다음 시대로 이끌어 보세요.</p>
         <ol class="howto" id="howtoList" aria-label="게임 방법"></ol>
         <div class="hero-actions">
           <button type="button" id="openTutorial" class="ghost-light">게임 안내</button>
@@ -52,7 +60,7 @@
           <label for="nickname">닉네임 <span>한글·영문·숫자 2~12자 · 실명은 쓰지 마세요</span></label>
           <div class="start-row">
             <input id="nickname" name="nickname" maxlength="12" minlength="2" required>
-            <button type="submit" class="primary big">원정 시작</button>
+            <button id="startButton" type="submit" class="primary big" disabled>자료 준비 중…</button>
           </div>
           <p class="error" id="startError" role="alert"></p>
         </form>
@@ -62,8 +70,8 @@
         </details>
       </div>
       <figure class="hero-guide">
-        <img src="assets/guide-haram.webp" alt="원정대 안내인 하람의 삽화" width="1024" height="1536">
-        <figcaption><strong>하람</strong> 원정대 안내인 · 가상 인물</figcaption>
+        <img src="assets/guide-jams.webp" alt="탐험대 안내인 잼스의 삽화" width="1024" height="1536">
+        <figcaption><strong>잼스</strong> 탐험대 안내인 · 가상 인물</figcaption>
       </figure>
     </section>
 
@@ -132,7 +140,7 @@
           </section>
         </section>
 
-        <aside class="panel side-left" aria-label="내 원정대 정보">
+        <aside class="panel side-left" aria-label="내 탐험대 정보">
           <h2 id="playerName"></h2>
           <p class="era-badge" id="eraName"></p>
           <p class="era-summary" id="eraSummary"></p>
@@ -151,9 +159,9 @@
 
         <aside class="side-right" aria-label="안내인과 지역 정보">
           <div class="guide-card">
-            <img src="assets/guide-haram.webp" alt="" width="1024" height="1536">
+            <img src="assets/guide-jams.webp" alt="" width="1024" height="1536">
             <div>
-              <p class="guide-name">하람 <span>안내인 · 가상 인물</span></p>
+              <p class="guide-name">잼스 <span>안내인 · 가상 인물</span></p>
               <p class="guide-line" id="guideLine" aria-live="polite"></p>
             </div>
           </div>
@@ -177,11 +185,11 @@
   <div id="flourish" class="flourish" aria-hidden="true"></div>
 
   <dialog id="logoutDialog" class="dlg" aria-labelledby="logoutHeading">
-    <h2 id="logoutHeading">처음 화면으로 갈까요?</h2>
-    <p>이 브라우저의 원정 기록 연결이 끊겨요. 서버 기록은 남지만, 지금 원정대로 다시 들어오는 기능은 아직 없어요.</p>
+    <h2 id="logoutHeading">로그아웃할까요?</h2>
+    <p>온라인 게임의 학습 기록과 아바타는 저장돼요. 같은 아이디와 비밀번호로 다시 로그인할 수 있어요.</p>
     <div class="actions-row">
       <button type="button" data-close autofocus>취소</button>
-      <button type="button" id="logoutConfirmBtn">처음 화면으로</button>
+      <button type="button" id="logoutConfirmBtn">로그아웃</button>
     </div>
   </dialog>
 

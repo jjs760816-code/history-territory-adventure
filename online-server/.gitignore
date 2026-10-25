@@ -1,0 +1,8 @@
+node_modules/
+dist/
+lib/
+assets/
+worker/index.js
+game-source/
+.env*
+*.sqlite*

@@ -9,9 +9,10 @@
   if(guide){
    let portrait=guide;
    if(guide.tagName==='IMG'){portrait=document.createElement('div');portrait.className='guide-portrait';portrait.setAttribute('role','img');guide.replaceWith(portrait);}
-   portrait.style.backgroundPosition=`${(i%3)*50}% ${Math.floor(i/3)*50}%`;
-   portrait.setAttribute('aria-label',`하람 · ${roles[i]} · 시대 복식을 상상한 게임 삽화`);
-   portrait.title='시대 복식을 상상한 게임 삽화이며 정확한 복원도가 아니에요.';
+   portrait.style.backgroundPosition='center';
+   portrait.style.backgroundImage="url('assets/guide-jams.webp')";portrait.style.backgroundSize='cover';
+   portrait.setAttribute('aria-label',`잼스 · ${roles[i]} · 선생님 제공 얼굴을 바탕으로 만든 게임 삽화`);
+   portrait.title='선생님 제공 얼굴을 바탕으로 만든 게임 삽화이며 정확한 복원도가 아니에요.';
   }
   let ribbon=document.getElementById('journeyRibbon');
   const strip=document.querySelector('.chapter-strip');

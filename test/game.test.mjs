@@ -118,10 +118,10 @@ describe('서버 API', () => {
     const xpAfterFirst = ok[0].json.state.player.xp;
     const grainAfterFirst = ok[0].json.state.player.grain;
 
-    // 구석기 문제 10개를 모두 처음 맞힌 뒤에는 같은 문제가 다시 나와도 보상이 없다
-    for (let i = 0; i < 12; i++) await answerRegion(c, PALEO_REGIONS[i % PALEO_REGIONS.length]);
+    // 구석기 문제를 모두 처음 맞힌 뒤에는 같은 문제가 다시 나와도 보상이 없다
+    for (let i = 0; i < QUESTIONS.filter(q=>q.era==='paleolithic').length+2; i++) await answerRegion(c, PALEO_REGIONS[i % PALEO_REGIONS.length]);
     const st = (await c.get('/api/state')).json;
-    assert.equal(st.stats.uniqueCorrect.paleolithic, 10);
+    assert.equal(st.stats.uniqueCorrect.paleolithic, QUESTIONS.filter(q=>q.era==='paleolithic').length);
     const r = await answerRegion(c, PALEO_REGIONS[0]);
     assert.equal(r.json.correct, true);
     assert.equal(r.json.reward.repeat, true);

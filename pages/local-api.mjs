@@ -79,6 +79,9 @@ export function createLocalApi({ SQL, storage, now }) {
     if (method === 'POST' && mm) return [200, game.startMissionChallenge(needPlayer(), mm[1])];
     if (method === 'POST' && path === '/api/review/challenge') return [200, game.startReviewChallenge(needPlayer())];
     if (method === 'POST' && path === '/api/answer') return [200, game.answer(needPlayer(), body.challengeId, body.choiceIndex)];
+    if(path.startsWith('/api/market'))throw new GameError(409,'shared_server_required','유저 간 시장은 공용 서버 연결 후 이용할 수 있어요. 현재 웹판은 브라우저마다 별도 저장해요.');
+    const devRoutes = {avatar:'avatarSave',avatarUpgrade:'avatarUpgrade',upgrade:'upgrade',harvest:'harvest',skill:'skill',nation:'formNation',defense:'startDefense',faction:'chooseFaction',collection:'startCollection',join:'joinNation'};
+    if (method === 'POST' && path.startsWith('/api/development/')) { const key=path.slice('/api/development/'.length); if(Object.hasOwn(devRoutes,key)) return [200, game[devRoutes[key]](needPlayer(),body)]; }
     if (method === 'POST' && path === '/api/advance') return [200, game.advance(needPlayer())];
     if (path === '/api/submissions') {
       if (method === 'POST') return [201, game.submitQuestion(needPlayer(), body)];

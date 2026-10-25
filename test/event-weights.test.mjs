@@ -14,7 +14,7 @@ test('기출 표본 추천 가중치는 사건30·기회17을 보존하고 공�
 
 test('추천은 퀴즈 진행 중간에 늘고 이미 알린 미션과 미래 시대를 반복하지 않는다',()=>{
  const win={};vm.runInNewContext(readFileSync(new URL('../public/recommendations.js',import.meta.url),'utf8'),{window:win});
- const select=win.MissionRecommendations.select,ms=attachEventWeights(MISSIONS),state={player:{era:'samguk',ref:'sample'},stats:{uniqueCorrect:{samguk:0},reviewPending:0},missions:ms.map(m=>({id:m.id,status:m.era==='samguk'?'active':'locked'}))};
+ const select=win.MissionRecommendations.select,ms=attachEventWeights(MISSIONS),state={player:{era:'samguk',ref:'sample'},stats:{uniqueCorrect:{samguk:0},reviewPending:0},missions:ms.map(m=>({id:m.id,status:m.era==='samguk'&&!m.faction?'active':'locked'}))};
  const first=Array.from(select(ms,state,new Set(),new Set()));assert.deepEqual(first,['m_sg_found']);
  const seen=new Set(first);state.stats.uniqueCorrect.samguk=2;
  const middle=Array.from(select(ms,state,seen,new Set()));assert.equal(middle.length,1);assert.notEqual(middle[0],'m_sg_found');

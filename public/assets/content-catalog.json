@@ -1,0 +1,48 @@
+{
+  "title": "역사랑 놀자",
+  "theme": "역사를 읽다. 사람을 잇다.",
+  "items": [
+    {
+      "id": "marble",
+      "type": "game",
+      "title": "역사 마블",
+      "url": "https://jjs760816-code.github.io/history-marble/"
+    },
+    {
+      "id": "territory",
+      "type": "game",
+      "title": "역사 땅따먹기",
+      "url": "https://jams-history-territory.sunlitbrush7.chatgpt.site/"
+    },
+    {
+      "id": "adventure",
+      "type": "game",
+      "title": "역사 탐험 1",
+      "url": "https://history-exploration-one-online.james816.chatgpt.site/"
+    },
+    {
+      "id": "classroom59",
+      "type": "classroom",
+      "title": "59반, 역사를 짓다",
+      "url": "https://history-nation-growth.sunlitbrush7.chatgpt.site/"
+    },
+    {
+      "id": "jams",
+      "type": "channel",
+      "title": "잼스 유튜브",
+      "url": "https://www.youtube.com/channel/UC0GrdlAij5TuMhW3LaAmkKA"
+    },
+    {
+      "id": "buma-book",
+      "type": "picture-book",
+      "title": "부마 가치 그림책 · 내 안의 용기",
+      "url": "https://www.youtube.com/watch?v=Hug6Ma99eCg"
+    },
+    {
+      "id": "may18-book",
+      "type": "picture-book",
+      "title": "5·18 가치 그림책 · 평화란 뭘까?",
+      "url": "https://www.youtube.com/watch?v=jZoifstrOIs"
+    }
+  ]
+}

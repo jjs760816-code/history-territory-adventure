@@ -13,7 +13,7 @@ let mapView = 'game';        // 'game' | 'history'
 let previewEra = 'paleolithic'; // 역사 지도 미리보기(플레이어 진행과 무관)
 let siteFocus = null;          // 역사 지도에서 고른 유적/섬
 let STORY = null;              // assets/story.json (배경 이야기·게임 안내)
-let freshSession = false;      // 이번에 새로 시작한 원정대인지(배경 이야기 자동 표시)
+let freshSession = false;      // 이번에 새로 시작한 탐험대인지(배경 이야기 자동 표시)
 const popupQueue = [];         // 미션 알림 대기열(다른 대화상자가 닫힌 뒤에만 띄움)
 const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 // 저장소 하위 경로(GitHub Pages)에서도 맞는 주소가 되도록 문서 기준 상대 경로로 만든다.
@@ -114,11 +114,16 @@ async function boot() {
   STORY = story;
   fillNotices();
   setupStatic();
+  $('startButton').disabled=false;
+  $('startButton').textContent='탐험 시작';
+  await window.HistoryPhotos?.init();
+  window.HistoryAuth?.configure(META);
   setupAudioToggles();
   setupStory();
   buildSources();
   try {
     STATE = await api('/api/state');
+    if(STATE.account?.resetRequired){window.HistoryAuth?.forceChange();return;}
     showGame();
   } catch (e) {
     if (e.status !== 401) toast(e.message);
@@ -131,7 +136,7 @@ function noticeItems() {
     META.demo.storageNotice,
     META.laterEraMapNotice,
     META.missionWeighting?.note,
-    '배경·안내인·카드 그림은 이 게임을 위해 만든 삽화예요. 실제 유물 사진이 아니며, 안내인 하람은 가상 인물이에요.'].filter(Boolean);
+    '배경·안내인·카드 그림은 이 게임을 위해 만든 삽화예요. 실제 유물 사진이 아니며, 안내인 잼스은 가상 인물이에요.'].filter(Boolean);
   items.splice(2, 0, CARTO?.notice || META.demo.mapNotice);
   return items;
 }
@@ -151,9 +156,12 @@ function setupStatic() {
     ev.preventDefault();
     $('startError').textContent = '';
     try {
-      await api('/api/session', { method: 'POST', body: { nickname: $('nickname').value } });
+      const login=window.HistoryAuth?.credentials()||{path:'/api/session',body:{nickname:$('nickname').value},fresh:true};
+      await api(login.path,{method:'POST',body:login.body});
+      if(login.recovery){$('startError').textContent='비밀번호를 변경했어요. 로그인 모드에서 새 비밀번호로 로그인하세요.';return;}
       STATE = await api('/api/state');
-      freshSession = true; // 새 원정대: 배경 이야기 → 게임 안내 → 첫 미션 알림
+      freshSession = login.fresh; // 새 탐험대: 배경 이야기 → 게임 안내 → 첫 미션 알림
+      if(STATE.account?.resetRequired){window.HistoryAuth?.forceChange();return;}
       showGame();
     } catch (e) { $('startError').textContent = e.message; }
   });
@@ -254,12 +262,12 @@ function showGame() {
   buildMap();
   buildRegionSelect();
   render();
-  setGuide(`${STATE.player.nickname} 원정대, 반가워요! 지도에서 구역을 골라 문제를 풀거나, 아래 사건판의 미션에 도전해 보세요.`);
+  setGuide(`${STATE.player.nickname} 탐험대, 반가워요! 지도에서 구역을 골라 문제를 풀거나, 아래 사건판의 미션에 도전해 보세요.`);
   requestAnimationFrame(layoutLabels);
   if (freshSession && STORY) {
-    // 새 원정대: 배경 이야기 → 게임 안내 → (닫히면) 첫 미션 알림. 게임 화면은 이미 뒤에 준비되어 있다.
+    // 새 탐험대: 배경 이야기 → 게임 안내 → (닫히면) 첫 미션 알림. 게임 화면은 이미 뒤에 준비되어 있다.
     freshSession = false;
-    queueNewMissions('원정을 시작했어요. 첫 미션이 열렸어요!');
+    queueNewMissions('탐험을 시작했어요. 첫 미션이 열렸어요!');
     openStory('story');
   } else {
     queueNewMissions('지난번 이후 새로 열린 미션이에요.');
@@ -272,7 +280,7 @@ function setGuide(text) { $('guideLine').textContent = text; }
 // ── 화면 그리기 ──
 function render() {
   const p = STATE.player;
-  $('playerName').textContent = `${p.nickname} 원정대`;
+  $('playerName').textContent = `${p.nickname} 탐험대`;
   $('eraName').textContent = eraName(p.era);
   $('eraSummary').textContent = META.eras.find((e) => e.id === p.era)?.summary ?? '';
   const land = STATE.regions.filter((r) => r.owner === 'player').length;
@@ -283,7 +291,7 @@ function render() {
   const era = eraMeta(p.era);
   $('chapterEra').textContent = `${eraName(p.era)} · ${era?.period ?? ''}`;
   // 역사 지도 자료(eraNotes)가 없는 뒤 시대는 시대 요약을 제목으로 쓴다.
-  $('chapterTitle').textContent = CARTO?.eraNotes?.[p.era]?.title ?? era?.summary ?? '';
+  $('chapterTitle').textContent = META.curriculum?.[p.era]?.title ?? CARTO?.eraNotes?.[p.era]?.title ?? era?.summary ?? '';
   $('gameScreen').dataset.era = p.era;
   window.HistoryJourney?.update(p.era);
   renderAdvance();
@@ -293,6 +301,11 @@ function render() {
   renderMap();
   renderRegionSelect();
   renderRegionPanel();
+  window.HistoryDevelopment?.update(STATE,META);
+  window.HistorySkills?.update(STATE,META);
+  window.HistoryAuth?.update(STATE);
+  window.HistoryAvatar?.update(STATE);
+  window.HistoryGrowth?.update(STATE);
 }
 
 function checkRow(c) {
@@ -879,7 +892,7 @@ function renderSiteInfo() {
       el('button', { type: 'button', class: 'linkish', text: '← 시대 설명으로', onclick: () => { siteFocus = null; renderHistoryLayer(); } }));
   } else if (note) {
     box.append(el('p', { class: 'eyebrow', text: `${note.subtitle} · 미리보기` }), el('h3', { text: note.title }), el('p', { text: note.description }),
-      el('p', { class: 'small', text: '시대 미리보기는 내 원정대의 진행과 상관없이 볼 수 있어요. 유적 점을 누르면 설명이 나와요.' }));
+      el('p', { class: 'small', text: '시대 미리보기는 내 탐험대의 진행과 상관없이 볼 수 있어요. 유적 점을 누르면 설명이 나와요.' }));
   }
   box.hidden = false;
 }
@@ -988,6 +1001,7 @@ function showQuiz(ch) {
     head,
     el('p', { class: 'small', text: `학습 목표: ${q.objective}` }),
     el('p', { class: 'quiz-q', text: q.text }),
+    window.HistoryPhotos?.figure(q.topic+' '+q.text,q.era,true),
     choices,
     el('p', { class: 'small', text: `검수 때 확인할 자료: ${q.sources.join(', ')}` }));
   $('quizDialog').showModal();
@@ -998,7 +1012,9 @@ async function submitAnswer(ch, idx, choicesBox) {
   btns.forEach((b) => { b.disabled = true; });
   try {
     const r = await api('/api/answer', { method: 'POST', body: { challengeId: ch.challengeId, choiceIndex: idx } });
+    const oldCollectionIds=new Set((STATE.development?.collections||[]).filter(c=>c.owned).map(c=>c.id));
     STATE = r.state;
+    const gainedCollections=(STATE.development?.collections||[]).filter(c=>c.owned&&!oldCollectionIds.has(c.id));
     btns[idx].classList.add(r.correct ? 'picked-ok' : 'picked-bad');
     const box = el('div', { class: `result ${r.correct ? 'ok' : 'bad'}` },
       el('h3', { text: r.correct ? '정답이에요!' : '아쉬워요, 오답이에요.' }),
@@ -1012,6 +1028,8 @@ async function submitAnswer(ch, idx, choicesBox) {
     else if (r.territory?.rivalWins != null) lines.push(`지역 도전 진행: ${r.territory.rivalWins} / ${r.territory.need}`);
     if (r.mission && r.mission.status !== 'rewarded') lines.push(`미션 「${missionMeta(r.mission.id)?.name}」 진행: ${progressText(r.mission)}`);
     for (const rc of r.missionsCompleted || []) lines.push(`미션 「${rc.name}」 완료! 경험치 +${rc.xp}, 식량 +${rc.grain}, 인구 +${rc.population}`);
+    if(r.upkeep)lines.push(`학습 4회 식량 정산: −${r.upkeep.grainLost}${r.upkeep.shortage?' (식량 부족 · 인구·영토 손실 없음)':''}`);
+    for(const c of gainedCollections)lines.push(`새 디지털 카드 「${c.name}」: ${c.effectText}`);
     lines.push(`판정: ${judgeShort()}`);
     lines.forEach((t) => box.append(el('p', { text: t })));
     if (r.newCards.length) {
@@ -1224,7 +1242,7 @@ function goStory(i) {
   replaceContent(dots,...storyPages.map((_, n) => el('li', { class: n === storyIndex ? 'on' : '', 'aria-current': n === storyIndex ? 'step' : null })));
   $('storyPage').textContent = `${storyIndex + 1} / ${storyPages.length}`;
   $('storyPrev').disabled = storyIndex === 0;
-  $('storyNext').textContent = last ? (inGame ? '원정 계속하기' : '닫기') : '다음';
+  $('storyNext').textContent = last ? (inGame ? '탐험 계속하기' : '닫기') : '다음';
   $('storySkip').hidden = last;
   $('storySkip').textContent = page.kind === 'slide' ? '이야기 건너뛰기' : '건너뛰기';
 }
@@ -1273,6 +1291,7 @@ function renderCards() {
           c.myth ? el('span', { class: 'pill myth', text: '신화·설화' }) : null,
           el('span', { class: `pill ${has ? 'have' : ''}`, text: has ? '획득' : '미획득' })),
         el('h4', { text: c.name }),
+        window.HistoryPhotos?.figure(c.name,c.era,false),
         el('p', { text: c.history }),
         el('p', {}, el('strong', { text: '효과: ' }), c.effectText),
         el('p', { class: 'small', text: `얻는 방법: ${c.howTo}` }),
@@ -1375,8 +1394,8 @@ function buildSources() {
     ]),
     el('h3', { text: '그림과 소리' }),
     ul([
-      '배경 풍경, 안내인 하람, 카드 그림은 이 게임을 위해 만든 삽화예요. 실제 유물·유적 사진이 아니에요.',
-      '안내인 하람은 가상 인물이에요.',
+      '배경 풍경, 안내인 잼스, 카드 그림은 이 게임을 위해 만든 삽화예요. 실제 유물·유적 사진이 아니에요.',
+      '안내인 잼스은 가상 인물이에요.',
       '비파형 동검 카드 그림은 코드로 그린 단순 도식이에요.',
       '배경음은 이 게임을 위해 새로 합성한 음원(river-dawn.wav)을 쓰고, 불러오지 못하면 브라우저에서 즉석으로 만든 소리로 바꿔요. 효과음은 즉석 소리(WebAudio)예요. 둘 다 기본은 꺼져 있어요.',
     ]),
@@ -1404,7 +1423,7 @@ function buildRules() {
     el('h3', { text: '보상' }),
     ul([
       `처음 맞힌 문제: 경험치 ${R.firstCorrect.xpBase} + ${R.firstCorrect.xpPerDifficulty}×(난이도-1), 식량 +${R.firstCorrect.grain}, 인구 +${R.firstCorrect.population}`,
-      '같은 문제를 다시 맞히면 보상 없음(기록만). 틀려도 자원이 줄지 않아요.',
+      '같은 문제의 정답 보상은 한 번만 받아요. 학습 4회마다 식량 정산이 있고, 방어 훈련 오답에는 안내된 식량 손실이 있어요.',
       `중립 지역 점령: 그 지역 문제 정답 1번 → 식량 +${R.capture.grain}, 인구 +${R.capture.population} (지역마다 한 번)`,
       `경쟁 부족 지역: 정답 ${R.rivalWinsNeeded}번이면 점령`,
       `정답 판정, 보상, 점령: ${META.demo.judgeNotice || judgeShort()} 문제는 한 번 답하면 다시 제출할 수 없어요.`,
@@ -1421,3 +1440,8 @@ function buildRules() {
 }
 
 boot().catch((e) => { document.body.prepend(el('p', { class: 'error', text: `시작하지 못했어요: ${e.message}` })); });
+
+window.addEventListener('history:refresh',async()=>{try{STATE=await api('/api/state');render();}catch(e){toast(e.message);}});
+
+window.addEventListener('history:collection',async e=>{try{showQuiz(await api('/api/development/collection',{method:'POST',body:{collectionId:e.detail}}));}catch(err){toast(err.message);}});
+window.addEventListener('history:avatar-state',e=>{STATE=e.detail;render();});
