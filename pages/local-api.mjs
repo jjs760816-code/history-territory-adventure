@@ -14,6 +14,7 @@ export const WEB_DEMO = {
   notice: '웹 1인 체험판입니다. 방 기반 온라인 경쟁·실시간 동기화는 아직 구현되지 않았어요.',
   storageNotice: '기록은 이 브라우저에만 저장돼요(다른 기기·브라우저와 공유되지 않음). 학생 실명·연락처는 받지 않아요.',
   judgeNotice: '체험판은 정답 판정을 이 브라우저 안에서 해요. 수업용 정식 판정은 로컬 서버판(npm start)을 쓰세요.',
+  judgeShort: '이 브라우저에서 확인',
 };
 
 function toBase64(bytes) {
@@ -74,6 +75,8 @@ export function createLocalApi({ SQL, storage, now }) {
     if (method === 'GET' && path === '/api/state') return [200, game.state(needPlayer())];
     const m = path.match(/^\/api\/regions\/([a-z0-9]{1,8})\/challenge$/);
     if (method === 'POST' && m) return [200, game.startRegionChallenge(needPlayer(), m[1])];
+    const mm = path.match(/^\/api\/missions\/([a-z0-9_]{1,48})\/challenge$/);
+    if (method === 'POST' && mm) return [200, game.startMissionChallenge(needPlayer(), mm[1])];
     if (method === 'POST' && path === '/api/review/challenge') return [200, game.startReviewChallenge(needPlayer())];
     if (method === 'POST' && path === '/api/answer') return [200, game.answer(needPlayer(), body.challengeId, body.choiceIndex)];
     if (method === 'POST' && path === '/api/advance') return [200, game.advance(needPlayer())];

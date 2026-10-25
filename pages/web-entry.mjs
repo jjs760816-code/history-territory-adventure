@@ -11,10 +11,13 @@ const ready = (async () => {
   return createLocalApi({ SQL, storage });
 })();
 
+// app.js 는 시작할 때 이 약속을 기다린다(스크립트 실행 순서와 무관하게 /api 준비 뒤 시작).
+window.__htaApiReady = ready.then(() => true, () => false);
+
 const realFetch = window.fetch.bind(window);
 window.fetch = async (input, init = {}) => {
-  const path = typeof input === 'string' ? input : input.url;
-  if (!path.startsWith('/api/')) return realFetch(input, init);
+  const path = typeof input === 'string' ? input : input instanceof URL ? input.href : input?.url;
+  if (typeof path !== 'string' || !path.startsWith('/api/')) return realFetch(input, init);
   const api = await ready;
   const { status, body } = api.handle((init.method || 'GET').toUpperCase(), path, init.body);
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });

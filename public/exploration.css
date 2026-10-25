@@ -1,0 +1,22 @@
+/* 시대별 인물과 근거를 남기는 탐구 활동 */
+.guide-portrait {width:92px;aspect-ratio:2/3;flex:0 0 92px;background-image:url('assets/journey-portraits.webp');background-size:300% 300%;border:1px solid #aa915a;border-radius:7px;box-shadow:0 4px 14px #0004;}
+.journey-ribbon {margin:0 0 .85rem;padding:.5rem 1rem;color:#dccc9b;background:#1a3836;border-bottom:1px solid #a78d50;font-size:.8rem;letter-spacing:.025em;}
+.inquiry-tabs {display:flex;gap:.4rem;flex-wrap:wrap;margin:1rem 0;}
+.inquiry-tabs button {font-size:.85rem;}
+.inquiry-tabs [aria-pressed=true] {color:#fff;background:#183c39;}
+.inquiry-clues {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:1rem 0;}
+.inquiry-clue {border:1px solid #b8a57b;background:#eee5cf;padding:1rem;border-radius:8px;}
+.inquiry-clue h4 {margin:0 0 .6rem;color:#3d635b;}
+.inquiry-clue p {margin:0;line-height:1.75;font-size:.95rem;}
+.inquiry-feedback:not(:empty) {padding:.8rem;border-left:4px solid #9d7f38;background:#f0e9d5;}
+.inquiry-label {display:grid;gap:.5rem;margin:1rem 0;font-weight:700;}
+.inquiry-label textarea {width:100%;min-height:110px;resize:vertical;padding:.8rem;font:inherit;line-height:1.7;border:1px solid #a48e62;border-radius:7px;background:#fffdf5;}
+.inquiry-dialog .small[role=status] {display:block;margin-top:.5rem;}
+@media(max-width:680px){.inquiry-clues{grid-template-columns:1fr}.guide-portrait{width:80px;flex-basis:80px}.journey-ribbon{font-size:.75rem;padding:.5rem .7rem}}
+
+.chapter-strip[data-scene] {position:relative;overflow:hidden;background:#173831;isolation:isolate;}
+.chapter-strip[data-scene]::before {content:'';position:absolute;left:0;top:50%;width:100%;aspect-ratio:3/2;transform:translateY(-50%);background-image:url('assets/chapter-scenes.webp');background-size:200% 300%;background-position:var(--scene-x) var(--scene-y);z-index:-2;}
+.chapter-strip[data-scene]::after {content:'';position:absolute;inset:0;background:linear-gradient(90deg,#0b2022ed,#0b202266);z-index:-1;}
+.chapter-strip[data-scene] > * {position:relative;}
+
+h1,h2,h3,h4,#storyTitle {word-break:keep-all;overflow-wrap:break-word;text-wrap:pretty;}

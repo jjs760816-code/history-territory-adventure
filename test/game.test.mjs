@@ -8,10 +8,14 @@ import { validateSubmission } from '../lib/game.mjs';
 const PALEO_REGIONS = REGIONS.filter((r) => r.era === 'paleolithic').map((r) => r.id);
 
 describe('콘텐츠', () => {
-  test('지역 12~20개, 문제 30개 이상, 카드 6~10장', () => {
+  // v1의 "카드 6~10장"은 첫 3개 시대 기준이었다. 9개 시대 캠페인에서는 처음 9장을 그대로 두고
+  // 새 시대마다 1장 이상을 더하므로, 원래 카드 보존과 전체 상한(20장)을 검사한다.
+  test('지역 12~20개, 문제 30개 이상, 처음 카드 9장 보존 + 카드 20장 이하', () => {
     assert.ok(REGIONS.length >= 12 && REGIONS.length <= 20);
     assert.ok(QUESTIONS.length >= 30);
-    assert.ok(CARDS.length >= 6 && CARDS.length <= 10);
+    const original = ['c_handaxe', 'c_fire', 'c_jeongok', 'c_comb', 'c_spindle', 'c_amsa', 'c_bipa', 'c_dolmen', 'c_dangun'];
+    for (const id of original) assert.ok(CARDS.some((c) => c.id === id), id);
+    assert.ok(CARDS.length >= 6 && CARDS.length <= 20);
   });
   test('모든 문제는 필수 항목이 있고 검수 대기 상태다', () => {
     const ids = new Set();
@@ -46,7 +50,7 @@ describe('서버 API', () => {
     const c = client(app.base);
     const ok = await c.get('/');
     assert.equal(ok.status, 200);
-    assert.match(ok.text, /역사 영토 원정대/);
+    assert.match(ok.text, /역사 탐험 1/);
     for (const p of ['/lib/questions.mjs', '/server.mjs', '/../lib/questions.mjs', '/%2e%2e/lib/questions.mjs',
       '/..%2flib%2fquestions.mjs', '/data/game.sqlite', '/%2e%2e/data/game.sqlite', '/package.json']) {
       const r = await c.get(p);
@@ -181,7 +185,9 @@ describe('서버 API', () => {
     const before = r.json.state.player;
     r = await answerRegion(c, rival);
     assert.equal(r.json.territory.alreadyOwned, true);
-    assert.equal(r.json.state.player.population - before.population, r.json.reward.population);
+    // 늘어난 인구 = 문제 보상 + (이번 답으로 끝난 미션 보상). 점령 보상(+3)은 다시 붙지 않는다.
+    const missionPop = r.json.missionsCompleted.reduce((s, m) => s + m.population, 0);
+    assert.equal(r.json.state.player.population - before.population, r.json.reward.population + missionPop);
   });
 
   test('세션 격리: 다른 플레이어의 문제에 답할 수 없고 상태가 섞이지 않는다', async () => {

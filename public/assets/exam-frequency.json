@@ -1,0 +1,372 @@
+{
+  "exam": "제71회 한국사능력검정시험 기본",
+  "date": "2024-08-10",
+  "total": 50,
+  "sampleSizeExams": 1,
+  "officialIndex": "https://www.historyexam.go.kr/pst/list.do?bbs=dat",
+  "accessCopy": "https://dreamer777.tistory.com/62",
+  "method": "국사편찬위원회가 출제한 기본 시험지 원본을 공개 재게시본으로 확인. 문항의 중심 시대와 학습 주제를 담당 검토자가 독자 분류. 전체 기출 또는 공식 시대별 출제율이 아님.",
+  "taxonomy": {
+    "event": "정치·외교·전쟁·제도 개혁·독립·민주화 등 구체적 사건의 전개",
+    "opportunity": "생활·문화·기술·경제·교류·탐구 기회로 구성할 주제",
+    "mixed": "여러 시대를 비교하는 복합 문항(비율 계산에서 제외)"
+  },
+  "eraCounts": {
+    "neolithic": 1,
+    "early-states": 1,
+    "kingdoms": 4,
+    "northsouth": 3,
+    "goryeo": 9,
+    "joseon": 9,
+    "modern": 16,
+    "contemporary": 6,
+    "cross-era": 1
+  },
+  "typeCounts": {
+    "opportunity": 19,
+    "event": 30,
+    "mixed": 1
+  },
+  "fromKingdoms": {
+    "event": 30,
+    "opportunity": 17
+  },
+  "byEra": {
+    "neolithic": {
+      "opportunity": 1
+    },
+    "early-states": {
+      "opportunity": 1
+    },
+    "kingdoms": {
+      "event": 2,
+      "opportunity": 2
+    },
+    "northsouth": {
+      "event": 1,
+      "opportunity": 2
+    },
+    "goryeo": {
+      "event": 5,
+      "opportunity": 4
+    },
+    "joseon": {
+      "event": 5,
+      "opportunity": 4
+    },
+    "modern": {
+      "event": 12,
+      "opportunity": 4
+    },
+    "contemporary": {
+      "event": 5,
+      "opportunity": 1
+    },
+    "cross-era": {
+      "mixed": 1
+    }
+  },
+  "questions": [
+    {
+      "number": 1,
+      "era": "neolithic",
+      "kind": "opportunity",
+      "topic": "신석기 생활"
+    },
+    {
+      "number": 2,
+      "era": "early-states",
+      "kind": "opportunity",
+      "topic": "동예의 풍습"
+    },
+    {
+      "number": 3,
+      "era": "kingdoms",
+      "kind": "event",
+      "topic": "진흥왕의 활동"
+    },
+    {
+      "number": 4,
+      "era": "kingdoms",
+      "kind": "event",
+      "topic": "백제 성왕"
+    },
+    {
+      "number": 5,
+      "era": "kingdoms",
+      "kind": "opportunity",
+      "topic": "가야의 철과 교류"
+    },
+    {
+      "number": 6,
+      "era": "kingdoms",
+      "kind": "opportunity",
+      "topic": "고구려 교육과 문화"
+    },
+    {
+      "number": 7,
+      "era": "northsouth",
+      "kind": "event",
+      "topic": "신라 말 사회 동요"
+    },
+    {
+      "number": 8,
+      "era": "northsouth",
+      "kind": "opportunity",
+      "topic": "설총과 이두"
+    },
+    {
+      "number": 9,
+      "era": "northsouth",
+      "kind": "opportunity",
+      "topic": "발해의 제도"
+    },
+    {
+      "number": 10,
+      "era": "goryeo",
+      "kind": "event",
+      "topic": "후삼국의 전개"
+    },
+    {
+      "number": 11,
+      "era": "goryeo",
+      "kind": "event",
+      "topic": "광종의 개혁"
+    },
+    {
+      "number": 12,
+      "era": "goryeo",
+      "kind": "opportunity",
+      "topic": "고려 문화와 제도"
+    },
+    {
+      "number": 13,
+      "era": "goryeo",
+      "kind": "event",
+      "topic": "거란 침입과 대장경"
+    },
+    {
+      "number": 14,
+      "era": "goryeo",
+      "kind": "opportunity",
+      "topic": "고려 목조 건축"
+    },
+    {
+      "number": 15,
+      "era": "goryeo",
+      "kind": "event",
+      "topic": "망이·망소이의 봉기"
+    },
+    {
+      "number": 16,
+      "era": "goryeo",
+      "kind": "event",
+      "topic": "윤관과 여진 관계"
+    },
+    {
+      "number": 17,
+      "era": "goryeo",
+      "kind": "opportunity",
+      "topic": "팔관회"
+    },
+    {
+      "number": 18,
+      "era": "goryeo",
+      "kind": "opportunity",
+      "topic": "고려의 경제"
+    },
+    {
+      "number": 19,
+      "era": "joseon",
+      "kind": "event",
+      "topic": "태종의 정책"
+    },
+    {
+      "number": 20,
+      "era": "joseon",
+      "kind": "opportunity",
+      "topic": "분청사기"
+    },
+    {
+      "number": 21,
+      "era": "joseon",
+      "kind": "event",
+      "topic": "직전법"
+    },
+    {
+      "number": 22,
+      "era": "joseon",
+      "kind": "event",
+      "topic": "대동법"
+    },
+    {
+      "number": 23,
+      "era": "joseon",
+      "kind": "event",
+      "topic": "임진왜란"
+    },
+    {
+      "number": 24,
+      "era": "joseon",
+      "kind": "event",
+      "topic": "정조의 정책"
+    },
+    {
+      "number": 25,
+      "era": "joseon",
+      "kind": "opportunity",
+      "topic": "김홍도의 풍속화"
+    },
+    {
+      "number": 26,
+      "era": "joseon",
+      "kind": "opportunity",
+      "topic": "조선 후기 생활"
+    },
+    {
+      "number": 27,
+      "era": "modern",
+      "kind": "event",
+      "topic": "임오군란"
+    },
+    {
+      "number": 28,
+      "era": "joseon",
+      "kind": "opportunity",
+      "topic": "서얼"
+    },
+    {
+      "number": 29,
+      "era": "modern",
+      "kind": "event",
+      "topic": "흥선대원군의 정책"
+    },
+    {
+      "number": 30,
+      "era": "modern",
+      "kind": "event",
+      "topic": "김홍집과 개화"
+    },
+    {
+      "number": 31,
+      "era": "modern",
+      "kind": "event",
+      "topic": "강화도 조약"
+    },
+    {
+      "number": 32,
+      "era": "modern",
+      "kind": "event",
+      "topic": "항일 의병"
+    },
+    {
+      "number": 33,
+      "era": "modern",
+      "kind": "event",
+      "topic": "동학 농민 운동"
+    },
+    {
+      "number": 34,
+      "era": "modern",
+      "kind": "opportunity",
+      "topic": "대한제국 시기 근대 시설"
+    },
+    {
+      "number": 35,
+      "era": "modern",
+      "kind": "event",
+      "topic": "토지 조사 사업"
+    },
+    {
+      "number": 36,
+      "era": "modern",
+      "kind": "event",
+      "topic": "봉오동 전투"
+    },
+    {
+      "number": 37,
+      "era": "modern",
+      "kind": "opportunity",
+      "topic": "방정환과 어린이 운동"
+    },
+    {
+      "number": 38,
+      "era": "modern",
+      "kind": "event",
+      "topic": "민족 말살 통치"
+    },
+    {
+      "number": 39,
+      "era": "modern",
+      "kind": "event",
+      "topic": "3·1 운동"
+    },
+    {
+      "number": 40,
+      "era": "modern",
+      "kind": "opportunity",
+      "topic": "민립 대학 설립 운동"
+    },
+    {
+      "number": 41,
+      "era": "modern",
+      "kind": "event",
+      "topic": "치안 유지법과 식민 통치"
+    },
+    {
+      "number": 42,
+      "era": "modern",
+      "kind": "event",
+      "topic": "한인 애국단"
+    },
+    {
+      "number": 43,
+      "era": "modern",
+      "kind": "opportunity",
+      "topic": "이육사의 문학"
+    },
+    {
+      "number": 44,
+      "era": "contemporary",
+      "kind": "event",
+      "topic": "광복 후 유엔 결의"
+    },
+    {
+      "number": 45,
+      "era": "contemporary",
+      "kind": "event",
+      "topic": "정부 수립 초기의 개혁"
+    },
+    {
+      "number": 46,
+      "era": "contemporary",
+      "kind": "event",
+      "topic": "5·18 민주화 운동"
+    },
+    {
+      "number": 47,
+      "era": "contemporary",
+      "kind": "opportunity",
+      "topic": "경제 개발"
+    },
+    {
+      "number": 48,
+      "era": "contemporary",
+      "kind": "event",
+      "topic": "1990년대 정부 정책"
+    },
+    {
+      "number": 49,
+      "era": "contemporary",
+      "kind": "event",
+      "topic": "남북 정상 회담"
+    },
+    {
+      "number": 50,
+      "era": "cross-era",
+      "kind": "mixed",
+      "topic": "제국에서 민국으로"
+    }
+  ],
+  "notice": "게임의 사건·기회 분류는 시험의 공식 분류가 아니라 학습 설계를 위한 해석이에요. 표본 1회만으로 전체 출제 경향을 확정할 수 없어요. 최신 79회 기본 시험의 목록은 확인했지만 파일 다운로드가 완료되지 않아 집계에 포함하지 않았어요."
+}

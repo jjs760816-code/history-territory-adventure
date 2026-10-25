@@ -3,86 +3,186 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>역사 영토 원정대 — 로컬 시연판</title>
-  <link rel="stylesheet" href="/style.css">
-  <script src="/app.js" defer></script>
+  <title>역사 탐험 1 — 로컬 시연판</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="exploration.css">
+  <script src="audio.js" defer></script>
+  <script src="recommendations.js" defer></script>
+  <script src="journey.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="inquiry.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <h1>역사 영토 원정대</h1>
-    <p class="demo-badge" id="demoNotice">로컬 1인 시연판 · 온라인 경쟁 미구현</p>
-    <nav class="topnav" id="topnav" hidden>
+    <div class="brand">
+      <span class="brand-seal" aria-hidden="true">原</span>
+      <div>
+        <h1>역사 탐험 1</h1>
+        <p class="brand-sub" id="demoNotice">로컬 1인 시연판 · 온라인 경쟁 미구현</p>
+      </div>
+    </div>
+    <nav class="topnav" id="topnav" aria-label="게임 메뉴" hidden>
+      <button type="button" id="missionBell" class="bell" hidden>새 미션 <span id="missionBellCount">0</span></button>
+      <button type="button" id="storyBtn">이야기·안내</button>
       <button type="button" data-open="cardsDialog">카드 도감</button>
       <button type="button" data-open="historyDialog">학습 기록·복습</button>
       <button type="button" data-open="createDialog">문제 만들기</button>
       <button type="button" data-open="rulesDialog">규칙</button>
       <button type="button" id="logoutBtn" class="ghost">처음으로</button>
     </nav>
+    <div class="utilnav" aria-label="자료와 소리">
+      <button type="button" data-open="sourceDialog">지도·그림 출처</button>
+      <button type="button" id="musicToggle" class="toggle" aria-pressed="false">배경음 꺼짐</button>
+      <button type="button" id="sfxToggle" class="toggle" aria-pressed="false">효과음 꺼짐</button>
+    </div>
   </header>
 
   <main>
-    <section id="startScreen" class="start card-panel">
-      <h2>원정대를 꾸려 볼까요?</h2>
-      <p>문제를 풀어 지역을 얻고, 구석기에서 신석기, 청동기·고조선으로 문명을 발전시켜요.</p>
-      <form id="startForm" autocomplete="off">
-        <label for="nickname">닉네임 (한글·영문·숫자 2~12자, 실명은 쓰지 마세요)</label>
-        <input id="nickname" name="nickname" maxlength="12" minlength="2" required>
-        <button type="submit" class="primary big">원정 시작</button>
-        <p class="error" id="startError" role="alert"></p>
-      </form>
-      <ul class="notice-list" id="startNotices"></ul>
+    <section id="startScreen" class="hero" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <p class="eyebrow">구석기에서 대한민국까지 · 9개 시대</p>
+        <h2 id="heroTitle">강과 산을 건너,<br>우리 역사의 첫 장으로</h2>
+        <p class="hero-lead">문제를 풀어 땅을 넓히고, 미션과 유물 카드를 모으며 원정대를 다음 시대로 이끌어 보세요.</p>
+        <ol class="howto" id="howtoList" aria-label="게임 방법"></ol>
+        <div class="hero-actions">
+          <button type="button" id="openTutorial" class="ghost-light">게임 안내</button>
+          <button type="button" id="openStory" class="ghost-light">배경 이야기</button>
+        </div>
+        <form id="startForm" class="start-card" autocomplete="off">
+          <label for="nickname">닉네임 <span>한글·영문·숫자 2~12자 · 실명은 쓰지 마세요</span></label>
+          <div class="start-row">
+            <input id="nickname" name="nickname" maxlength="12" minlength="2" required>
+            <button type="submit" class="primary big">원정 시작</button>
+          </div>
+          <p class="error" id="startError" role="alert"></p>
+        </form>
+        <details class="scope">
+          <summary>이 시연판에 대해</summary>
+          <ul class="notice-list" id="startNotices"></ul>
+        </details>
+      </div>
+      <figure class="hero-guide">
+        <img src="assets/guide-haram.webp" alt="원정대 안내인 하람의 삽화" width="1024" height="1536">
+        <figcaption><strong>하람</strong> 원정대 안내인 · 가상 인물</figcaption>
+      </figure>
     </section>
 
-    <section id="gameScreen" class="layout" hidden>
-      <aside class="panel left" aria-label="내 원정대 정보">
-        <h2 id="playerName"></h2>
-        <p class="era-badge" id="eraName"></p>
-        <p class="era-summary" id="eraSummary"></p>
-        <dl class="resources">
-          <div><dt>경험치</dt><dd id="resXp"></dd></div>
-          <div><dt>식량</dt><dd id="resGrain"></dd></div>
-          <div><dt>인구</dt><dd id="resPop"></dd></div>
-          <div><dt>국력</dt><dd id="resPower"></dd></div>
-          <div><dt>영토</dt><dd id="resLand"></dd></div>
+    <section id="gameScreen" hidden>
+      <div class="chapter-strip">
+        <div class="chapter-text">
+          <p class="chapter-era" id="chapterEra"></p>
+          <h2 class="chapter-title" id="chapterTitle"></h2>
+        </div>
+        <dl class="hud" aria-label="요약 자원">
+          <div><dt>경험치</dt><dd id="hudXp"></dd></div>
+          <div><dt>식량</dt><dd id="hudGrain"></dd></div>
+          <div><dt>인구</dt><dd id="hudPop"></dd></div>
+          <div><dt>국력</dt><dd id="hudPower"></dd></div>
         </dl>
-        <h3>시대 발전</h3>
-        <div id="advanceBox"></div>
-        <h3>미션</h3>
-        <ul id="missionList" class="missions"></ul>
-      </aside>
+      </div>
 
-      <section class="map-wrap" aria-label="지도">
-        <p class="map-notice" id="mapNotice"></p>
-        <div class="map-tools">
-          <button type="button" id="zoomIn" aria-label="확대">＋</button>
-          <button type="button" id="zoomOut" aria-label="축소">－</button>
-          <button type="button" id="zoomReset">원래 크기</button>
-        </div>
-        <div class="map-frame">
-          <svg id="map" viewBox="60 10 300 575" role="group" aria-label="시연용 지역 지도"></svg>
-        </div>
-        <ul class="legend">
-          <li><span class="sw own"></span>★ 우리 영토</li>
-          <li><span class="sw neutral"></span>중립 지역</li>
-          <li><span class="sw rival"></span>⚑ 시연용 경쟁 부족(컴퓨터)</li>
-          <li><span class="sw locked"></span>🔒 아직 갈 수 없는 시대</li>
-        </ul>
-      </section>
+      <div class="layout">
+        <section class="map-wrap" id="mapWrap" aria-label="지도">
+          <div class="map-toolbar">
+            <div class="seg" role="group" aria-label="지도 보기">
+              <button type="button" id="viewGame" aria-pressed="true">점령 지도</button>
+              <button type="button" id="viewHistory" aria-pressed="false">역사 지도</button>
+            </div>
+            <div class="seg era-tabs" id="eraTabs" role="tablist" aria-label="역사 지도 시대 미리보기" hidden></div>
+            <label class="region-pick">
+              <span>지역 고르기</span>
+              <select id="regionSelect"><option value="">지역 목록</option></select>
+            </label>
+            <div class="seg zoom" role="group" aria-label="지도 크기">
+              <button type="button" id="zoomOut" aria-label="축소">－</button>
+              <button type="button" id="zoomIn" aria-label="확대">＋</button>
+              <button type="button" id="zoomReset">맞춤</button>
+              <button type="button" id="mapExpand" aria-pressed="false">크게 보기</button>
+            </div>
+          </div>
+          <div class="map-frame" id="mapFrame">
+            <svg id="map" viewBox="0 0 1000 1040" role="group" aria-label="지도: 현재 해안선 바탕 위의 게임 구역"></svg>
+          </div>
+          <div class="map-foot">
+            <ul class="legend" id="legendGame">
+              <li><span class="sw own"></span>★ 우리 영토</li>
+              <li><span class="sw neutral"></span>중립</li>
+              <li><span class="sw rival"></span>⚑ 시연용 경쟁 부족(컴퓨터)</li>
+              <li><span class="sw locked"></span>🔒 다음 시대에 열림</li>
+            </ul>
+            <ul class="legend" id="legendHistory" hidden>
+              <li><span class="dot-sw"></span>유적(정보용 · 점령과 무관)</li>
+              <li><span class="dash-sw"></span>고조선 문화 범위 참고 · 확정 국경 아님</li>
+            </ul>
+            <p class="map-notice" id="mapNotice"></p>
+          </div>
+          <div class="site-info" id="siteInfo" aria-live="polite" hidden></div>
+          <section class="event-board" id="eventBoard" aria-labelledby="boardHeading">
+            <div class="board-head">
+              <div>
+                <p class="eyebrow" id="boardPeriod"></p>
+                <h2 id="boardHeading">이번 시대의 사건과 기회</h2>
+              </div>
+              <p class="board-note" id="boardNote"></p>
+            </div>
+            <p class="board-chapter" id="boardChapter"></p>
+            <div class="mission-cards" id="missionCards"></div>
+            <h3 class="roadmap-title">시대 길잡이</h3>
+            <ol class="roadmap" id="roadmap" aria-label="시대 순서"></ol>
+          </section>
+        </section>
 
-      <aside class="panel right" aria-label="지역 정보" id="regionPanel">
-        <h2>지역을 골라 보세요</h2>
-        <p>지도에서 지역을 누르면 정보와 도전 버튼이 나타나요.</p>
-      </aside>
+        <aside class="panel side-left" aria-label="내 원정대 정보">
+          <h2 id="playerName"></h2>
+          <p class="era-badge" id="eraName"></p>
+          <p class="era-summary" id="eraSummary"></p>
+          <dl class="resources">
+            <div><dt>경험치</dt><dd id="resXp"></dd></div>
+            <div><dt>식량</dt><dd id="resGrain"></dd></div>
+            <div><dt>인구</dt><dd id="resPop"></dd></div>
+            <div><dt>국력</dt><dd id="resPower"></dd></div>
+            <div><dt>영토</dt><dd id="resLand"></dd></div>
+          </dl>
+          <h3>시대 발전</h3>
+          <div id="advanceBox"></div>
+          <h3>이번 시대 미션</h3>
+          <ul id="missionList" class="missions"></ul>
+        </aside>
+
+        <aside class="side-right" aria-label="안내인과 지역 정보">
+          <div class="guide-card">
+            <img src="assets/guide-haram.webp" alt="" width="1024" height="1536">
+            <div>
+              <p class="guide-name">하람 <span>안내인 · 가상 인물</span></p>
+              <p class="guide-line" id="guideLine" aria-live="polite"></p>
+            </div>
+          </div>
+          <div class="panel" id="regionPanel">
+            <h2>지역을 골라 보세요</h2>
+            <p>지도에서 구역을 누르거나 위의 “지역 고르기” 목록을 쓰면 정보와 도전 버튼이 나타나요.</p>
+          </div>
+        </aside>
+      </div>
+
+      <footer class="game-foot">
+        <details class="scope">
+          <summary>이 시연판에 대해 · 검수 상태</summary>
+          <ul class="notice-list" id="gameNotices"></ul>
+        </details>
+      </footer>
     </section>
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="flourish" class="flourish" aria-hidden="true"></div>
 
   <dialog id="logoutDialog" class="dlg" aria-labelledby="logoutHeading">
     <h2 id="logoutHeading">처음 화면으로 갈까요?</h2>
     <p>이 브라우저의 원정 기록 연결이 끊겨요. 서버 기록은 남지만, 지금 원정대로 다시 들어오는 기능은 아직 없어요.</p>
-    <button type="button" data-close autofocus>취소</button>
-    <button type="button" id="logoutConfirmBtn">처음 화면으로</button>
+    <div class="actions-row">
+      <button type="button" data-close autofocus>취소</button>
+      <button type="button" id="logoutConfirmBtn">처음 화면으로</button>
+    </div>
   </dialog>
 
   <dialog id="quizDialog" class="dlg">
@@ -91,7 +191,7 @@
 
   <dialog id="cardsDialog" class="dlg wide">
     <div class="dlg-head"><h2>카드 도감</h2><button type="button" class="close" data-close>닫기</button></div>
-    <p class="hint">카드는 문제를 풀고 지역을 점령하고 시대를 발전시키면 얻어요. 신화에서 온 카드는 "신화·설화"로 표시해요.</p>
+    <p class="hint">카드는 문제를 풀고 지역을 점령하고 시대를 발전시키면 얻어요. 그림은 이 게임을 위해 그린 삽화이며 실제 유물 사진이 아니에요. 신화에서 온 카드는 “신화·설화”로 표시해요.</p>
     <div id="cardGrid" class="card-grid"></div>
   </dialog>
 
@@ -109,7 +209,7 @@
 
   <dialog id="createDialog" class="dlg wide">
     <div class="dlg-head"><h2>문제 만들기</h2><button type="button" class="close" data-close>닫기</button></div>
-    <p class="hint warn">AI 검토는 연결되어 있지 않아요. 제출한 문제는 형식 검사만 거쳐 "검토 대기"로 저장되며, 승인 전에는 다른 문제처럼 출제되거나 점령 보상에 쓰이지 않아요.</p>
+    <p class="hint warn">AI 검토는 연결되어 있지 않아요. 제출한 문제는 형식 검사만 거쳐 “검토 대기”로 저장되며, 승인 전에는 다른 문제처럼 출제되거나 점령 보상에 쓰이지 않아요.</p>
     <form id="createForm" autocomplete="off">
       <label>시대
         <select name="era" id="createEra"></select>
@@ -140,6 +240,45 @@
   <dialog id="rulesDialog" class="dlg wide">
     <div class="dlg-head"><h2>규칙과 계산 방법</h2><button type="button" class="close" data-close>닫기</button></div>
     <div id="rulesBody"></div>
+  </dialog>
+
+  <dialog id="storyDialog" class="dlg story" aria-labelledby="storyTitle" aria-describedby="storyText">
+    <div class="story-scene" id="storyScene" aria-hidden="true"></div>
+    <div class="story-body">
+      <div class="story-top">
+        <p class="eyebrow" id="storyEyebrow"></p>
+        <button type="button" class="close" id="storyClose">닫기</button>
+      </div>
+      <h2 id="storyTitle"></h2>
+      <div id="storyText" class="story-text"></div>
+      <p class="story-label" id="storyLabel"></p>
+      <details class="story-sources" id="storySources">
+        <summary>이 장면의 참고 자료</summary>
+        <ul id="storySourceList"></ul>
+      </details>
+      <div class="story-nav">
+        <button type="button" id="storyPrev">이전</button>
+        <ol class="story-dots" id="storyDots" aria-label="쪽 표시"></ol>
+        <span class="story-page" id="storyPage" aria-live="polite"></span>
+        <button type="button" id="storySkip" class="linkish">건너뛰기</button>
+        <button type="button" id="storyNext" class="primary">다음</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="missionPopup" class="dlg mission-pop" aria-labelledby="missionPopTitle">
+    <div class="dlg-head"><h2 id="missionPopTitle">새 미션</h2><button type="button" class="close" data-close>나중에</button></div>
+    <div id="missionPopBody"></div>
+  </dialog>
+
+  <dialog id="missionDialog" class="dlg" aria-labelledby="missionDlgTitle">
+    <div class="dlg-head"><h2 id="missionDlgTitle">미션</h2><button type="button" class="close" data-close>닫기</button></div>
+    <div id="missionDlgBody"></div>
+  </dialog>
+
+  <dialog id="sourceDialog" class="dlg wide" aria-labelledby="sourceHeading">
+    <div class="dlg-head"><h2 id="sourceHeading">지도·그림·문제 출처</h2><button type="button" class="close" data-close>닫기</button></div>
+    <div id="sourceBody"></div>
   </dialog>
 </body>
 </html>

@@ -14,7 +14,7 @@ const MAX_BODY = 16 * 1024;
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
-  '.png': 'image/png', '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png', '.webp': 'image/webp', '.wav': 'audio/wav', '.json': 'application/json; charset=utf-8',
 };
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -158,6 +158,11 @@ export function createApp({ dataDir = process.env.DATA_DIR || join(ROOT, 'data')
     if (method === 'POST' && m) {
       await readJson(req);
       return send(res, 200, game.startRegionChallenge(needPlayer(), m[1]));
+    }
+    const mm = path.match(/^\/api\/missions\/([a-z0-9_]{1,48})\/challenge$/);
+    if (method === 'POST' && mm) {
+      await readJson(req);
+      return send(res, 200, game.startMissionChallenge(needPlayer(), mm[1]));
     }
     if (method === 'POST' && path === '/api/review/challenge') {
       await readJson(req);
