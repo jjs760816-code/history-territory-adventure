@@ -62,7 +62,8 @@ export async function buildPages(outDir = join(ROOT, 'dist')) {
   // 검사: 화면 파일에 절대 경로가 남아 있지 않아야 한다(API 경로 /api/ 는 web-entry 가 가로챈다).
   for (const file of await walk(outDir)) {
     if (!['.html', '.css', '.js', '.mjs'].includes(extname(file)) || file.startsWith(join(outDir, 'vendor'))) continue;
-    const text = await readFile(file, 'utf8');
+    let text = await readFile(file, 'utf8');
+    if(['.html','.js'].includes(extname(file))){text=text.replace(/(src|href)="\/(?!\/)/g, '$1="./'); text=text.replace(/(['"`])\/assets\//g, '$1./assets/'); await writeFile(file,text);}
     const m = text.match(ABSOLUTE_REF);
     if (m) throw new Error(`하위 경로에서 깨지는 절대 경로가 있어요: ${relative(outDir, file)} → ${m[0]}`);
   }

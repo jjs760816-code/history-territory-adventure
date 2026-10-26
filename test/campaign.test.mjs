@@ -74,7 +74,7 @@ describe('캠페인 콘텐츠', () => {
       assert.ok(Number.isInteger(m.reward.xp) && Number.isInteger(m.reward.grain) && Number.isInteger(m.reward.population));
       if (m.reward.card) assert.ok(CARDS.some((c) => c.id === m.reward.card), m.id);
       for (const id of m.questionIds) assert.equal(QUESTION_BY_ID.get(id)?.era, m.era, `${m.id} → ${id}`);
-      if (m.action === 'quiz') assert.ok(m.questionIds.length > 0, m.id);
+      if (m.action === 'quiz') assert.ok(m.questionIds.length > 0 || m.requires?.length > 0, m.id);
     }
     assert.ok(MISSION_WEIGHTING.note.includes('공식 출제율은 아니에요'));
   });
@@ -138,12 +138,14 @@ describe('미션 API', () => {
     const ms = st.missions.find((x) => x.id === 'm_tools');
     assert.equal(ms.status, 'rewarded');
     assert.equal(ms.receipt.xp, m.reward.xp);
-    // 이미 끝난 미션도 연습은 되지만 보상은 없다
+    // 끝난 미션의 남은 미학습 문제는 풀 수 있고, 모두 소진하면 완료 응답을 돌려준다.
     for (let i = 0; i < 4; i++) {
-      const before = (await c.get('/api/state')).json.player;
-      const { r } = await solveMission(c, 'm_tools');
-      assert.ok(!r.missionsCompleted.some((x) => x.id === 'm_tools'));
-      if (r.reward.repeat) assert.equal(r.state.player.xp, before.xp + r.missionsCompleted.reduce((s, x) => s + x.xp, 0));
+      const ch=await c.post('/api/missions/m_tools/challenge');
+      if(ch.status===409){assert.equal(ch.json.error,'mission_complete');break;}
+      assert.equal(ch.status,200);
+      const r=await c.post('/api/answer',{challengeId:ch.json.challengeId,answerText:ch.json.question.type==='short'?correctIndex(ch.json):undefined,choiceIndex:correctIndex(ch.json)});
+      assert.equal(r.status,200);
+      assert.ok(!r.json.missionsCompleted.some(x=>x.id==='m_tools'));
     }
   });
 

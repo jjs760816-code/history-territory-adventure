@@ -59,10 +59,10 @@ test('review: actual questions unlock both eras and survive database reopen', ()
     const review=game.startReviewChallenge(playerId);
     assert.equal(game.answer(playerId,review.challengeId,correctAnswer(review)).correct,true);
     const solve=region=>{const ch=game.startRegionChallenge(playerId,region);const result=game.answer(playerId,ch.challengeId,correctAnswer(ch));assert.equal(result.correct,true);return result;};
-    for(let i=0;i<6;i++)solve(['r05','r08','r09'][i%3]);
+    for(let i=0;i<30 && !game.state(playerId).advance.ok;i++)solve(['r05','r08','r09'][i%3]);
     assert.equal(game.state(playerId).advance.ok,true);
     assert.equal(game.advance(playerId).era,'neolithic');
-    for(let i=0;i<6;i++)solve(['r03','r06'][i%2]);
+    for(let i=0;i<30 && !game.state(playerId).advance.ok;i++)solve(['r03','r06'][i%2]);
     assert.equal(game.state(playerId).advance.ok,true);
     assert.equal(game.advance(playerId).era,'gojoseon');
     const before=game.state(playerId);

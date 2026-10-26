@@ -68,7 +68,7 @@ describe('서버 API', () => {
     assert.equal(ch.status, 200);
     const s = JSON.stringify(ch.json);
     assert.doesNotMatch(s, /"answer"|"explanation"|correct/i);
-    assert.equal(ch.json.question.choices.length, 4);
+    assert.equal(ch.json.question.choices.length, ch.json.question.type==='short'?0:ch.json.question.type==='ox'?2:4);
     assert.equal(ch.json.question.reviewStatus, 'pending');
   });
 

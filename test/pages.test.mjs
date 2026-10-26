@@ -81,9 +81,9 @@ test('pages: 시작 → 오답·복습 → 점령 → 두 번의 시대 발전 �
   const rev = c.post('/api/review/challenge').json;
   assert.equal(c.post('/api/answer', { challengeId: rev.challengeId, choiceIndex: correctIndex(rev) }).json.correct, true);
   assert.equal(play('r05').territory.captured, true);
-  for (let i = 0; i < 6; i++) play(['r05', 'r08', 'r09'][i % 3]);
+  for (let i = 0; i < 30 && !c.get('/api/state').json.advance.ok; i++) play(['r05', 'r08', 'r09'][i % 3]);
   assert.equal(c.post('/api/advance').json.era, 'neolithic');
-  for (let i = 0; i < 6; i++) play(['r03', 'r06'][i % 2]);
+  for (let i = 0; i < 30 && !c.get('/api/state').json.advance.ok; i++) play(['r03', 'r06'][i % 2]);
   assert.equal(c.post('/api/advance').json.era, 'gojoseon');
   assert.equal(c.post('/api/advance').status, 400);
 
