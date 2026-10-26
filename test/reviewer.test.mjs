@@ -50,10 +50,10 @@ test('review: actual questions unlock both eras and survive database reopen', ()
     const correctAnswer=ch=>{
       const q=QUESTIONS.find(q=>q.question===ch.question.text);
       assert.ok(q);
-      return ch.question.choices.indexOf(q.choices[q.answer]);
+      return q.type==='short'?q.acceptedAnswers[0]:ch.question.choices.indexOf(q.choices[q.answer]);
     };
     const wrong=game.startRegionChallenge(playerId,'r05');
-    const wrongResult=game.answer(playerId,wrong.challengeId,(correctAnswer(wrong)+1)%4);
+    const wrongResult=game.answer(playerId,wrong.challengeId,wrong.question.type==='short'?'다른답':(correctAnswer(wrong)+1)%wrong.question.choices.length);
     assert.equal(wrongResult.correct,false);
     assert.equal(wrongResult.state.player.xp,0);
     const review=game.startReviewChallenge(playerId);

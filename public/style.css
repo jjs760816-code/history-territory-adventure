@@ -556,3 +556,6 @@ button.ghost-light:hover { background: rgba(255,255,255,0.18); }
   .flourish.show { animation: none; opacity: 1; }
   .topbar .bell.has-new { animation: none; }
 }
+
+/* 문항 개정: 힌트는 스스로 펼쳐 보고 단답은 키보드로 제출한다. */
+.quiz-hints{display:grid;gap:8px;margin:16px 0}.quiz-hints details{border:1px solid #927646;background:#292820;border-radius:9px;padding:10px 13px}.quiz-hints summary{cursor:pointer;color:#f4d68a;font-weight:700}.quiz-hints p{line-height:1.7}.short-answer-form{width:100%;display:grid;gap:12px}.short-answer-input{font:inherit;font-size:20px;width:100%;padding:14px;border:2px solid #b89b5e;border-radius:9px;background:#fffdf5;color:#202b28}.initial-hint{font-size:21px;letter-spacing:2px;color:#f5d483}.misconception-feedback{margin-top:12px;padding:12px;border-left:4px solid #eebc6b;background:#ffffff0b;line-height:1.7}

@@ -2,25 +2,25 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>역사 탐험 1 — 로컬 시연판</title>
   <meta name="description" content="역사 탐험 1은 구석기부터 현대까지 한국사의 흐름을 퀴즈와 미션, 역사 카드와 아바타 성장으로 배우는 역사 학습 게임입니다. 역사랑 놀자에서 탐험을 시작해요.">
-  <link rel="canonical" href="https://history-exploration-one-online.james816.chatgpt.site/"><meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://xn--9t4b56g.com/play.html"><meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="exploration.css">
   <script src="audio.js" defer></script>
   <script src="recommendations.js" defer></script>
   <script src="journey.js" defer></script>
-  <script src="development.js" defer></script>
+  <script src="timeline.js" defer></script><script src="development.js" defer></script>
   <script src="skills.js" defer></script>
   <script src="photos.js" defer></script>
   <script src="auth.js" defer></script>
   <script src="avatar.js" defer></script>
-  <script src="growth.js" defer></script>
+
   <script src="app.js" defer></script>
   <script src="inquiry.js" defer></script>
   <link rel="stylesheet" href="development.css">
-<meta name="google-site-verification" content="srMHRmIUMNhQUu9WLy5Lcny2qySiH5LN8ShRuisrvLQ"><meta name="naver-site-verification" content="6f9adcdc5aea6b44b74e221afa039e8446e1896d"></head>
+<meta name="google-site-verification" content="srMHRmIUMNhQUu9WLy5Lcny2qySiH5LN8ShRuisrvLQ"><meta name="naver-site-verification" content="6f9adcdc5aea6b44b74e221afa039e8446e1896d"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#183d35"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="잼스"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png"><link rel="stylesheet" href="/pwa.css"><script src="/pwa.js" defer></script><link rel="stylesheet" href="/scene.css"><script src="/scene.js" defer></script></head>
 <body>
   <header class="topbar">
     <div class="brand">
@@ -30,6 +30,7 @@
         <p class="brand-sub" id="demoNotice">로컬 1인 시연판 · 온라인 경쟁 미구현</p>
       </div>
     </div>
+    <div class="header-session-controls" aria-label="로그인과 로그아웃"><button type="button" id="headerLoginBtn">로그인</button><button type="button" id="logoutBtn" class="logout-button" hidden>로그아웃</button></div>
     <nav class="topnav" id="topnav" aria-label="게임 메뉴" hidden>
       <button type="button" id="missionBell" class="bell" hidden>새 미션 <span id="missionBellCount">0</span></button>
       <button type="button" id="storyBtn">이야기·안내</button>
@@ -37,12 +38,12 @@
       <button type="button" data-open="historyDialog">학습 기록·복습</button>
       <button type="button" data-open="createDialog">문제 만들기</button>
       <button type="button" data-open="rulesDialog">규칙</button>
-      <button type="button" id="logoutBtn" class="logout-button">로그아웃</button>
+      
     </nav>
     <div class="utilnav" aria-label="자료와 소리">
       <a href="game-room.html" class="game-room-link">역사랑 놀자 ↗</a>
-      <button type="button" data-open="sourceDialog">지도·그림 출처</button>
-      <button type="button" id="musicToggle" class="toggle" aria-pressed="false">배경음 꺼짐</button>
+      <button type="button" data-open="sourceDialog" aria-label="지도·그림 출처">출처</button>
+      <button type="button" id="sceneMotionToggle" aria-pressed="false">장면 움직임 멈추기</button><button type="button" id="musicToggle" class="toggle" aria-pressed="false">배경음 꺼짐</button>
       <button type="button" id="sfxToggle" class="toggle" aria-pressed="false">효과음 꺼짐</button>
     </div>
   </header>
@@ -71,8 +72,8 @@
           <ul class="notice-list" id="startNotices"></ul>
         </details>
       </div>
-      <figure class="hero-guide">
-        <img src="assets/guide-jams.webp" alt="탐험대 안내인 잼스의 삽화" width="1024" height="1536">
+      <figure class="hero-guide"><span class="scene-motes" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <img src="assets/guide-jams-scene.webp" alt="새벽 강가에서 열매 바구니를 든 안내인 잼스" width="1024" height="1536">
         <figcaption><strong>잼스</strong> 탐험대 안내인 · 가상 인물</figcaption>
       </figure>
     </section>
@@ -92,7 +93,7 @@
       </div>
 
       <div class="layout">
-        <section class="map-wrap" id="mapWrap" aria-label="지도">
+        <section class="map-wrap" id="mapWrap" aria-label="지도"><div class="map-start-guide"><div><strong>지도에서 바로 시작하세요</strong><p>열린 지역을 한 번 클릭하거나 터치하면 탐험 문제가 열려요. 잠긴 지역은 시대를 발전시키면 열려요.</p></div><button type="button" class="primary" id="quickStartQuiz">탐험 시작</button></div>
           <div class="map-toolbar">
             <div class="seg" role="group" aria-label="지도 보기">
               <button type="button" id="viewGame" aria-pressed="true">점령 지도</button>
@@ -126,20 +127,8 @@
             </ul>
             <p class="map-notice" id="mapNotice"></p>
           </div>
-          <div class="site-info" id="siteInfo" aria-live="polite" hidden></div>
-          <section class="event-board" id="eventBoard" aria-labelledby="boardHeading">
-            <div class="board-head">
-              <div>
-                <p class="eyebrow" id="boardPeriod"></p>
-                <h2 id="boardHeading">이번 시대의 사건과 기회</h2>
-              </div>
-              <p class="board-note" id="boardNote"></p>
-            </div>
-            <p class="board-chapter" id="boardChapter"></p>
-            <div class="mission-cards" id="missionCards"></div>
-            <h3 class="roadmap-title">시대 길잡이</h3>
-            <ol class="roadmap" id="roadmap" aria-label="시대 순서"></ol>
-          </section>
+          <section class="timeline-roadmap"><h2>시대 길잡이 · 탐험 로드맵</h2><p>시대를 누르거나 연표를 확대해 사건과 미션을 살펴보세요.</p><button type="button" id="openTimeline">연표 확대해서 보기</button><ol class="roadmap" id="roadmap" aria-label="시대 순서"></ol></section><div class="site-info" id="siteInfo" aria-live="polite" hidden></div>
+
         </section>
 
         <aside class="panel side-left" aria-label="내 탐험대 정보">
@@ -171,6 +160,18 @@
             <h2>지역을 골라 보세요</h2>
             <p>지도에서 구역을 누르거나 위의 “지역 고르기” 목록을 쓰면 정보와 도전 버튼이 나타나요.</p>
           </div>
+          <section class="event-board" id="eventBoard" aria-labelledby="boardHeading">
+            <div class="board-head">
+              <div>
+                <p class="eyebrow" id="boardPeriod"></p>
+                <h2 id="boardHeading">이번 시대의 사건과 기회</h2>
+              </div>
+              <p class="board-note" id="boardNote"></p>
+            </div>
+            <p class="board-chapter" id="boardChapter"></p>
+            <div class="mission-cards" id="missionCards"></div>
+            
+          </section><details class="side-village" id="villageMenu"><summary>우리 마을 키우기 · 나라 세우기</summary><div id="villageContent"></div></details><details class="side-village" id="skillsMenu"><summary>발전·스킬·시장</summary><div id="skillsContent"></div></details>
         </aside>
       </div>
 
@@ -290,5 +291,5 @@
     <div class="dlg-head"><h2 id="sourceHeading">지도·그림·문제 출처</h2><button type="button" class="close" data-close>닫기</button></div>
     <div id="sourceBody"></div>
   </dialog>
-</body>
+<dialog id="timelineDialog" class="dlg timeline-dialog"><header><h2>역사 연표 · 게임 로드맵</h2><button type="button" id="closeTimeline">닫기</button></header><p>시대 순서에 따라 탐험합니다. 간격은 실제 시간 길이에 비례하지 않아요.</p><div class="timeline-controls"><button type="button" id="timelineMinus">− 축소</button><label>연표 확대 <input id="timelineZoom" type="range" min="1" max="3" step="1" value="1"></label><button type="button" id="timelinePlus">+ 확대</button><button type="button" id="timelineCurrent">현재 시대 찾기</button><strong id="timelineLevel"></strong></div><div id="timelineTrack" class="timeline-track"></div></dialog></body>
 </html>

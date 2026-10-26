@@ -289,7 +289,7 @@
       const btn = el('button', {
         type: 'submit', class: 'primary', 'data-dev-key': key, id: 'devpNationBtn',
         disabled: Boolean(ui.pending) || !n.canForm || !valid,
-        text: ui.pending === key ? '세우는 중…' : '나라 세우기 · 식량 -20',
+        text: ui.pending === key ? '세우는 중…' : `나라 세우기 · 식량 -${num(n.foodCost)}`,
       });
       sec.append(el('form', {
         class: 'devp-nform', novalidate: true,
@@ -306,7 +306,7 @@
       },
       el('label', { for: 'devpNationName', text: '나라 이름' }),
       el('div', { class: 'devp-nrow' }, input, btn),
-      el('p', { class: 'small', id: 'devpNationHelp', text: '한글·영문·숫자 2~12자. 실명, 학교, 연락처 같은 개인정보는 넣지 마세요. 세울 때 식량 20이 들어요.' }),
+      el('p', { class: 'small', id: 'devpNationHelp', text: `한글·영문·숫자 2~12자. 실명, 학교, 연락처 같은 개인정보는 넣지 마세요. 세울 때 식량 ${num(n.foodCost)}이 들어요.` }),
       !n.canForm ? el('p', { class: 'devp-why', text: '위 조건을 모두 채우면 세울 수 있어요.' }) : null));
     }
     if (n.notice) sec.append(el('p', { class: 'small', text: n.notice }));
@@ -439,7 +439,7 @@
   // ── 그리기 ──
   function render() {
     const dev = ui.state?.development;
-    const wrap = document.getElementById('mapWrap');
+    const wrap = document.getElementById('villageContent') || document.getElementById('mapWrap');
     if (!ui.panel) {
       if (!wrap) return;
       ui.panel = el('section', { id: 'developmentPanel', class: 'devp', 'aria-labelledby': 'devpTitle' });

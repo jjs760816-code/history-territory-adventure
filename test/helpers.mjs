@@ -49,10 +49,10 @@ export function client(base) {
 export function correctIndex(challenge) {
   const q = QUESTIONS.find((x) => x.question === challenge.question.text);
   if (!q) throw new Error('문제를 찾지 못함');
-  return challenge.question.choices.indexOf(q.choices[q.answer]);
+  return q.type === 'short' ? q.acceptedAnswers[0] : challenge.question.choices.indexOf(q.choices[q.answer]);
 }
 export function wrongIndex(challenge) {
-  return (correctIndex(challenge) + 1) % 4;
+  return challenge.question.type === 'short' ? '다른답' : (correctIndex(challenge) + 1) % challenge.question.choices.length;
 }
 
 export async function newPlayer(base, nickname = '탐험가') {
@@ -69,4 +69,29 @@ export async function answerRegion(c, regionId, { correct = true } = {}) {
   const r = await c.post('/api/answer', { challengeId: ch.json.challengeId, choiceIndex: idx });
   r.challenge = ch.json;
   return r;
+}
+
+import {openDb} from '../lib/db.mjs';
+import {createGame} from '../lib/game.mjs';
+import {QUESTION_BY_ID} from '../lib/questions.mjs';
+export function fixture({ nickname = '검증하기', clock } = {}) {
+  const dir = mkdtempSync(join(tmpdir(), 'progression-'));
+  const db = openDb(dir);
+  let t = 1_700_000_000_000;
+  const now = clock || (() => (t += 1000));
+  const game = createGame(db, { now });
+  const id = nickname ? game.createPlayer(nickname).playerId : null;
+  const close = () => { db.close(); rmSync(dir, { recursive: true, force: true }); };
+  return { db, game, id, dir, now, close };
+}
+
+export function questionOf(db, challengeId) {
+  const row = db.prepare('SELECT question_id, choice_order FROM challenges WHERE id = ?').get(challengeId);
+  return { q: QUESTION_BY_ID.get(row.question_id), order: JSON.parse(row.choice_order) };
+}
+export function answer(db, game, id, ch, correct = true) {
+  const { q, order } = questionOf(db, ch.challengeId);
+  if(q.type === 'short') return game.answer(id,ch.challengeId,correct?q.acceptedAnswers[0]:'다른답');
+  const right = order.indexOf(q.answer);
+  return game.answer(id, ch.challengeId, correct ? right : (right + 1) % order.length);
 }

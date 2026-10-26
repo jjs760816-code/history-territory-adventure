@@ -8,6 +8,7 @@ let META = null;
 let STATE = null;
 let CARTO = null;
 let selectedRegion = null;
+let regionChallengePending = false;
 let zoom = 1;
 let mapView = 'game';        // 'game' | 'history'
 let previewEra = 'paleolithic'; // 역사 지도 미리보기(플레이어 진행과 무관)
@@ -114,10 +115,11 @@ async function boot() {
   STORY = story;
   fillNotices();
   setupStatic();
-  $('startButton').disabled=false;
-  $('startButton').textContent='탐험 시작';
-  await window.HistoryPhotos?.init();
   window.HistoryAuth?.configure(META);
+  if(!META.demo.authRequired)$('startButton').textContent='탐험 시작';
+  $('startButton').disabled=false;
+  // Optional photos must not delay account setup or game startup.
+  try{Promise.resolve(window.HistoryPhotos?.init()).catch(()=>{});}catch{}
   setupAudioToggles();
   setupStory();
   buildSources();
@@ -126,7 +128,9 @@ async function boot() {
     if(STATE.account?.resetRequired){window.HistoryAuth?.forceChange();return;}
     showGame();
   } catch (e) {
-    if (e.status !== 401) toast(e.message);
+    if(e.status===401){
+      try{if(await window.HistoryAuth?.resumeOwner()){STATE=await api('/api/state');showGame();return;}}catch(ownerError){$('startError').textContent=ownerError.message;}
+    }else toast(e.message);
     $('startScreen').hidden = false;
   }
 }
@@ -165,12 +169,14 @@ function setupStatic() {
       showGame();
     } catch (e) { $('startError').textContent = e.message; }
   });
+  $('quickStartQuiz').addEventListener('click',()=>{const region=META.regions.find(r=>regionClass(r)!=='locked'&&regionClass(r)!=='own')||META.regions.find(r=>regionClass(r)!=='locked');if(region){if(mapView!=='game')setView('game');selectRegion(region.id);}else toast('현재 도전할 수 있는 지역이 없어요.');});
   $('logoutBtn').addEventListener('click', () => $('logoutDialog').showModal());
   $('logoutConfirmBtn').addEventListener('click', async () => {
     const button = $('logoutConfirmBtn');
     button.disabled = true;
     try {
       await api('/api/logout', { method: 'POST' });
+      window.HistoryAuth?.markSignedOut();
       location.reload();
     } catch (e) {
       toast(e.message);
@@ -264,15 +270,7 @@ function showGame() {
   render();
   setGuide(`${STATE.player.nickname} 탐험대, 반가워요! 지도에서 구역을 골라 문제를 풀거나, 아래 사건판의 미션에 도전해 보세요.`);
   requestAnimationFrame(layoutLabels);
-  if (freshSession && STORY) {
-    // 새 탐험대: 배경 이야기 → 게임 안내 → (닫히면) 첫 미션 알림. 게임 화면은 이미 뒤에 준비되어 있다.
-    freshSession = false;
-    queueNewMissions('탐험을 시작했어요. 첫 미션이 열렸어요!');
-    openStory('story');
-  } else {
-    queueNewMissions('지난번 이후 새로 열린 미션이에요.');
-    flushPopups();
-  }
+  freshSession = false;
 }
 
 function setGuide(text) { $('guideLine').textContent = text; }
@@ -304,8 +302,8 @@ function render() {
   window.HistoryDevelopment?.update(STATE,META);
   window.HistorySkills?.update(STATE,META);
   window.HistoryAuth?.update(STATE);
+  window.HistoryTimeline?.update(STATE,META);
   window.HistoryAvatar?.update(STATE);
-  window.HistoryGrowth?.update(STATE);
 }
 
 function checkRow(c) {
@@ -351,15 +349,13 @@ function renderMissions() {
   const cur = eraOrder(STATE.player.era);
   const shown = META.missions.filter((m) => {
     const s = missionState(m.id);
-    return m.era === STATE.player.era || (eraOrder(m.era) < cur && s && s.status !== 'rewarded');
+    if(!s||s.status==='rewarded'||s.status==='completed')return false;
+    return m.era === STATE.player.era || eraOrder(m.era) < cur;
   });
   for (const m of shown) {
     const s = missionState(m.id);
     list.append(el('li', { class: `ms-${s.status}` },
-      el('button', { type: 'button', class: 'mission-row', onclick: () => openMission(m.id) },
-        el('span', { class: `kind k-${m.kind}`, text: KIND_LABEL[m.kind] }),
-        el('span', { class: 'mname', text: m.name }),
-        el('span', { class: 'mstat', text: s.status === 'rewarded' ? '✓ 보상' : progressText(s) }))));
+      el('button', { type: 'button', class: 'mission-row mission-title-only', text:m.name, title:STATUS_LABEL[s.status], onclick: () => openMission(m.id) })));
   }
   if (!shown.length) list.append(el('li', { class: 'small', text: '이번 시대 미션을 모두 마쳤어요.' }));
 }
@@ -409,7 +405,13 @@ function renderBoard() {
   $('boardChapter').textContent = era.chapter;
   $('boardNote').textContent = era.order > 2 ? META.laterEraMapNotice : '';
   const cards = $('missionCards');
-  replaceContent(cards,...missionsForEra(p.era).map((m) => missionCard(m)));
+  const opened=new Set([...cards.querySelectorAll('details[open]')].map(n=>n.dataset.missionId));
+  replaceContent(cards,...missionsForEra(p.era).filter(m=>missionState(m.id)?.status!=='rewarded').map((m) => {
+    const fold=el('details',{class:'mission-fold','data-mission-id':m.id});
+    fold.open=opened.has(m.id);
+    fold.append(el('summary',{text:m.name}),missionCard(m));return fold;
+  }));
+  if(!cards.children.length)cards.append(el('p',{class:'small',text:'이번 시대의 사건과 기회 보상을 모두 받았어요.'}));
   const road = $('roadmap');
   replaceContent(road,);
   const cur = era.order;
@@ -417,7 +419,7 @@ function renderBoard() {
     const state = e.order < cur ? 'past' : e.order === cur ? 'current' : e.order === cur + 1 ? 'next' : 'future';
     const li = el('li', { class: `rm-${state}`, 'aria-current': state === 'current' ? 'step' : null },
       el('span', { class: 'rm-dot', 'aria-hidden': 'true' }),
-      el('span', { class: 'rm-name', text: e.short }),
+      el('button', { type:'button',class: 'rm-name', text: e.short,onclick:()=>window.HistoryTimeline?.open(e.id) }),
       el('span', { class: 'rm-period', text: e.period }));
     if (state === 'next') {
       const n = META.missions.filter((m) => m.era === e.id).length;
@@ -494,9 +496,9 @@ function queueNewMissions(reason) {
 
 function queueDone(receipts) {
   if (!receipts?.length) return;
-  const last = popupQueue.at(-1);
-  if (last?.type === 'done') last.receipts.push(...receipts); // 연달아 끝난 미션은 한 번에
-  else popupQueue.push({ type: 'done', receipts: [...receipts] });
+  const last = popupQueue.find(p=>p.type==='done');
+  if (last) last.receipts.push(...receipts); // 연달아 끝난 미션은 한 번에
+  else popupQueue.unshift({ type: 'done', receipts: [...receipts] });
 }
 
 function flushPopups() {
@@ -510,6 +512,8 @@ function flushPopups() {
 }
 
 function showNewMissions(ids, reason) {
+  $('missionPopup').classList.remove('reward-celebration');
+  $('missionPopup').querySelector('[data-close]').textContent='나중에';
   const seen = loadSeen();
   ids.forEach((id) => seen.add(id));
   saveSeen(seen);
@@ -535,9 +539,14 @@ function showNewMissions(ids, reason) {
 }
 
 function showDone(receipts) {
+  $('missionPopup').classList.add('reward-celebration');
+  $('missionPopup').querySelector('[data-close]').textContent='확인';
+  const totals=receipts.reduce((a,r)=>({xp:a.xp+r.xp,grain:a.grain+r.grain,population:a.population+r.population}),{xp:0,grain:0,population:0});
   const body = $('missionPopBody');
   $('missionPopTitle').textContent = receipts.length > 1 ? `미션 ${receipts.length}개 완료!` : '미션 완료!';
   replaceContent(body,
+    el('div',{class:'reward-burst','aria-hidden':'true',text:'✦'}),
+    el('div',{class:'reward-gains'},el('strong',{text:'경험치 +'+totals.xp}),el('strong',{text:'식량 +'+totals.grain}),el('strong',{text:'인구 +'+totals.population})),
     el('p', { class: 'pop-reason', text: `조건을 채워 보상을 받았어요(${judgeShort()}). 같은 미션 보상은 다시 받지 않아요.` }),
     el('ul', { class: 'receipts' }, receipts.map((r) => el('li', {},
       el('strong', { text: r.name }),
@@ -925,9 +934,8 @@ function selectRegion(id) {
     ? `${r.name}은(는) ${eraName(r.era)} 문제로 도전하는 구역이에요. 시대를 발전시키면 열려요.`
     : cls === 'own' ? `${r.name}은(는) 이미 우리 영토예요. 아직 안 푼 문제로 공부를 이어 갈 수 있어요.`
       : `${r.name}: ${r.terrain} 지형이에요. ${eraName(r.era)} 문제를 맞히면 ${judgeShort()}한 뒤 점령해요.`);
-  if (window.matchMedia('(max-width: 900px)').matches && !$('mapWrap').classList.contains('expanded')) {
-    $('regionPanel').scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest' });
-  }
+  if(cls==='locked'){toast(`${eraName(r.era)}에 들어서면 이 지역이 열려요.`);return;}
+  if(mapView==='game')startRegion(id);
 }
 
 function renderRegionPanel() {
@@ -968,7 +976,10 @@ function renderRegionPanel() {
 
 // ── 문제 풀이 ──
 async function startRegion(regionId) {
+  if(regionChallengePending)return;
+  regionChallengePending=true;
   try { showQuiz(await api(`/api/regions/${regionId}/challenge`, { method: 'POST' })); } catch (e) { toast(e.message); }
+  finally{regionChallengePending=false;}
 }
 async function startReview() {
   try {
@@ -984,42 +995,57 @@ function showQuiz(ch) {
     el('span', { class: 'pill', text: eraName(q.era) }),
     el('span', { class: 'pill', text: q.topic }),
     el('span', { class: 'pill', text: `난이도 ${q.difficulty}` }),
-    el('span', { class: 'pill pending', text: '자체 제작 · 검수 대기' }),
+    el('span', { class: 'pill', text: q.type === 'ox' ? 'OX 판단' : q.type === 'short' ? '초성 단답형' : '자료·개념 객관식' }),
+    el('span', { class: 'pill pending', text: '개정 자체 문항 · 교사 검토 대기' }),
     q.myth ? el('span', { class: 'pill myth', text: '신화 해석 문제' }) : null,
     ch.mode === 'review' ? el('span', { class: 'pill', text: '복습' }) : null,
     ch.missionId ? el('span', { class: 'pill', text: `미션 · ${missionMeta(ch.missionId)?.name ?? ''}` }) : null);
   const title = ch.missionId ? missionMeta(ch.missionId)?.name ?? '미션 문제' : ch.regionId ? regionMeta(ch.regionId).name : '복습 문제';
   const choices = el('div', { class: 'quiz-choices' });
-  q.choices.forEach((c, i) => {
+  if (q.type === 'short') {
+    const input = el('input', { type: 'text', maxlength: '80', autocomplete: 'off', placeholder: '초성을 보고 낱말로 답해요', 'aria-label': '단답형 정답', class: 'short-answer-input' });
+    const form = el('form', { class: 'short-answer-form' }, el('p', { class: 'initial-hint', text: `초성 도움: ${q.answerHint} · ${q.answerLength}글자` }), input, el('button', { type: 'submit', class: 'btn primary', text: '답 제출하기' }));
+    form.addEventListener('submit', e => {e.preventDefault(); if (!input.value.trim()) {input.focus();return;} submitAnswer(ch, input.value.trim(), choices);});
+    choices.append(form);
+  } else q.choices.forEach((c, i) => {
     choices.append(el('button', {
       type: 'button', onclick: () => submitAnswer(ch, i, choices),
-    }, el('span', { class: 'num', text: `${i + 1}` }), el('span', { text: c })));
+    }, el('span', { class: 'num', text: q.type === 'ox' ? (i === 0 ? 'O' : 'X') : `${i + 1}` }), el('span', { text: c })));
   });
+  const hintBox = el('div', { class: 'quiz-hints' });
+  (q.hints || []).forEach((hint, i) => hintBox.append(el('details', {}, el('summary', { text: `힌트 ${i + 1} 보기${i === 0 ? ' · 생각의 방향' : ' · 개념 연결'}` }), el('p', { text: hint }))));
   replaceContent(body,
     el('div', { class: 'dlg-head' }, el('h2', { text: title }),
       el('button', { type: 'button', class: 'close', text: '닫기', onclick: () => $('quizDialog').close() })),
     head,
+    ch.repeat ? el('p', { class: 'notice', text: ch.selection?.message || '이 범위의 새 문제를 모두 보았어요. 복습으로 다시 도전해요.' }) : null,
     el('p', { class: 'small', text: `학습 목표: ${q.objective}` }),
     el('p', { class: 'quiz-q', text: q.text }),
     window.HistoryPhotos?.figure(q.topic+' '+q.text,q.era,true),
     choices,
-    el('p', { class: 'small', text: `검수 때 확인할 자료: ${q.sources.join(', ')}` }));
+    hintBox,
+    el('p', { class: 'small', text: `참고 자료(확인 범위는 검토 기록 참고): ${q.sources.join(', ')}` }));
   $('quizDialog').showModal();
 }
 
 async function submitAnswer(ch, idx, choicesBox) {
+  if (choicesBox.dataset.submitting === 'yes' || choicesBox.dataset.answered === 'yes') return;
+  choicesBox.dataset.submitting = 'yes';
   const btns = [...choicesBox.querySelectorAll('button')];
   btns.forEach((b) => { b.disabled = true; });
   try {
-    const r = await api('/api/answer', { method: 'POST', body: { challengeId: ch.challengeId, choiceIndex: idx } });
+    const r = await api('/api/answer', { method: 'POST', body: { challengeId: ch.challengeId, ...(ch.question.type === 'short' ? { answerText: idx } : { choiceIndex: idx }) } });
     const oldCollectionIds=new Set((STATE.development?.collections||[]).filter(c=>c.owned).map(c=>c.id));
     STATE = r.state;
     const gainedCollections=(STATE.development?.collections||[]).filter(c=>c.owned&&!oldCollectionIds.has(c.id));
-    btns[idx].classList.add(r.correct ? 'picked-ok' : 'picked-bad');
+    choicesBox.dataset.answered = 'yes';
+    if (ch.question.type !== 'short') btns[idx]?.classList.add(r.correct ? 'picked-ok' : 'picked-bad');
+    choicesBox.querySelectorAll('input').forEach(i => i.disabled = true);
     const box = el('div', { class: `result ${r.correct ? 'ok' : 'bad'}` },
       el('h3', { text: r.correct ? '정답이에요!' : '아쉬워요, 오답이에요.' }),
       el('p', {}, el('strong', { text: '정답: ' }), r.correctChoice),
-      el('p', { text: r.explanation }));
+      el('p', { text: r.explanation }),
+      r.feedback ? el('div', { class: 'misconception-feedback' }, el('strong', { text: '선택한 답 다시 살펴보기' }), el('p', { text: r.feedback })) : null);
     const lines = [];
     if (r.reward.firstCorrect) lines.push(`처음 맞힌 문제 보상: 경험치 +${r.reward.xp}, 식량 +${r.reward.grain}, 인구 +${r.reward.population}`);
     if (r.reward.repeat) lines.push('이미 보상을 받은 문제라 이번엔 기록만 남겨요.');
@@ -1070,6 +1096,7 @@ async function submitAnswer(ch, idx, choicesBox) {
     render();
     queueNewMissions('풀이 진행에 맞춰 새 미션을 추천해요. 목표와 보상을 살펴보세요.');
   } catch (e) {
+    choicesBox.dataset.submitting = 'no';
     toast(e.message);
     $('quizDialog').close();
   }

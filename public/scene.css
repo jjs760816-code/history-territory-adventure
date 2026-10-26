@@ -1,0 +1,64 @@
+/* The guide shares the valley's light, rather than sitting inside a photo panel. */
+#startScreen{isolation:isolate}
+#startScreen .hero-guide{position:relative;align-self:end;justify-self:center;width:min(100%,440px);padding:0 20px 34px;margin:0 0 3vh;z-index:1}
+#startScreen .hero-guide::before{content:"";position:absolute;width:56%;height:28px;left:22%;bottom:32px;background:radial-gradient(ellipse,#101e18aa,transparent 70%);filter:blur(5px);transform:scaleX(1.25);pointer-events:none}
+#startScreen .hero-guide img{position:relative;display:block;height:min(66vh,650px);width:auto;max-width:100%;object-fit:contain;transform-origin:50% 95%;filter:saturate(.78) brightness(.92) sepia(.09) drop-shadow(8px 12px 12px #101e1840);mask-image:linear-gradient(#000 0%,#000 96%,transparent 100%)}
+#startScreen .hero-guide figcaption{bottom:4px;font-size:.75rem;padding:.3rem .75rem;background:#142e26ba;border-color:#d4b87370;backdrop-filter:blur(4px)}
+#startScreen .scene-motes{position:absolute;inset:15% 10% 8%;pointer-events:none;overflow:hidden;z-index:0}
+.scene-motes i{position:absolute;width:4px;height:4px;background:#f7dfa0;border-radius:50%;opacity:0;box-shadow:0 0 10px #ead49c88}
+.scene-motes i:nth-child(1){left:12%;top:75%;--drift:18px;--delay:-2s}
+.scene-motes i:nth-child(2){left:84%;top:65%;--drift:-22px;--delay:-7s}
+.scene-motes i:nth-child(3){left:40%;top:88%;--drift:30px;--delay:-5s}
+.scene-motes i:nth-child(4){left:70%;top:42%;--drift:15px;--delay:-10s}
+.scene-motion-enabled #startScreen .hero-guide img{animation:jamsBreathe 7s ease-in-out infinite}
+.scene-motion-enabled #startScreen .scene-motes i{animation:jamsDust 13s linear infinite;animation-delay:var(--delay)}
+@keyframes jamsBreathe{0%,100%{transform:translateY(0) rotate(-.25deg) scaleY(1)}50%{transform:translateY(-3px) rotate(.3deg) scaleY(1.004)}}
+@keyframes jamsDust{0%{opacity:0;transform:translate(0,8px)}25%,65%{opacity:.38}100%{opacity:0;transform:translate(var(--drift),-90px)}}
+#sceneMotionToggle{min-height:44px}
+@media(max-width:900px){#startScreen .hero-guide{order:-1;padding:12px 12px 24px;margin:0;max-width:260px}#startScreen .hero-guide img{height:230px;max-width:100%}#startScreen .hero-guide::before{bottom:23px;height:18px}#startScreen .hero-guide figcaption{bottom:0}#startScreen .hero-copy{padding-top:14px}}
+@media(prefers-reduced-motion:reduce){.scene-motion-enabled #startScreen .hero-guide img,.scene-motion-enabled #startScreen .scene-motes i{animation:none!important}}
+/* Keep the game toolbar one row; small screens can scroll it sideways. */
+.topbar{flex-wrap:nowrap;gap:8px;overflow-x:auto;scrollbar-width:thin;padding:7px 12px}
+.topbar .brand{flex:0 0 auto;gap:7px}
+.topbar .brand-seal{width:30px;height:30px}
+.topbar h1{font-size:17px;white-space:nowrap}
+.topbar .brand-sub{font-size:10px;white-space:nowrap}
+.topbar .topnav,.topbar .utilnav{flex:0 0 auto;flex-wrap:nowrap;gap:5px;align-items:center}
+.topbar button,.topbar a{white-space:nowrap;font-size:12px;min-height:34px;padding:6px 9px;line-height:1.2}
+.topbar #sceneMotionToggle{min-height:34px}
+.topbar .utilnav{margin-left:0}
+.my-avatar-preview{flex-direction:column;align-items:center}
+.avatar-session-controls{display:flex;gap:7px;justify-content:center;flex-wrap:nowrap;width:100%;margin-top:7px}
+.avatar-session-controls button{font-size:12px;min-height:40px;padding:7px 11px;white-space:nowrap}
+.avatar-session-controls #logoutBtn{position:static;background:#7c342b;color:#fff;border:1px solid #b58d6a;box-shadow:none;border-radius:8px;z-index:auto}
+#startScreen .hero-guide{padding-bottom:90px}
+#startScreen .hero-guide::before{bottom:88px}
+#startScreen .hero-guide figcaption{bottom:56px}
+.hero-session-controls{position:absolute;bottom:5px;left:0}
+.hero-session-controls button{background:#183d35de;color:#f7edcf;border:1px solid #c8ac75}
+.hero-session-controls button:disabled{opacity:.55}
+@media(max-width:900px){#startScreen .hero-guide{padding-bottom:75px}#startScreen .hero-guide::before{bottom:73px}#startScreen .hero-guide figcaption{bottom:46px}}
+@media(max-width:600px){.topbar button,.topbar a{min-height:40px}.topbar #sceneMotionToggle{min-height:40px}}
+/* Account controls stay at the upper left, beside the site name. */
+.header-session-controls{display:flex;flex:0 0 auto;gap:5px;align-items:center}
+.topbar .header-session-controls #logoutBtn{position:static;right:auto;bottom:auto;z-index:auto;background:#7c342b;color:#fff;border:1px solid #c7a26d;border-radius:7px;box-shadow:none;font-size:12px;min-height:34px;padding:6px 9px}
+.header-session-controls button:disabled{opacity:.65}
+#startScreen .hero-guide{padding-bottom:34px}
+#startScreen .hero-guide::before{bottom:32px}
+#startScreen .hero-guide figcaption{bottom:4px}
+.map-start-guide{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 18px;margin-bottom:12px;background:#e7eedf;border:1px solid #b8c6ac;border-radius:12px;color:#203f35}
+.map-start-guide strong{font-size:20px}
+.map-start-guide p{font-size:15px;line-height:1.6;margin:5px 0 0}
+.map-start-guide button{flex:none;min-height:46px;font-size:16px}
+.region{touch-action:manipulation;cursor:pointer}
+@media(max-width:600px){.map-start-guide{align-items:stretch;flex-direction:column;padding:13px;gap:10px}.map-start-guide strong{font-size:18px}.map-start-guide p{font-size:14px}.map-start-guide button{width:100%}}
+@media(max-width:900px){#startScreen .hero-guide{padding-bottom:24px}#startScreen .hero-guide::before{bottom:23px}#startScreen .hero-guide figcaption{bottom:0}}
+
+.side-left .resources{font-size:16px}.side-left .resources dd{font-size:22px}.side-left #advanceBox .check{font-size:15px;line-height:1.6}
+
+/* 지도는 중앙에, 사건·기회와 발전 메뉴는 오른쪽에 배치합니다. */
+.layout{grid-template-columns:180px minmax(0,1fr) 310px;gap:14px}.map-frame{height:78vh;min-height:580px}.side-right{align-content:start}.side-right .event-board{margin:0;padding:14px;border-radius:12px}.side-right .event-board h2{font-size:20px}.side-right .mission-cards{grid-template-columns:1fr}.side-right .mission-card{min-width:0;padding:12px}.side-right .board-note{font-size:12px}.side-village{background:#fbf6e8;border:1px solid #b9a26e;border-radius:12px;padding:12px}.side-village>summary{font-size:16px;font-weight:800;cursor:pointer;min-height:32px}.side-village .devp,.side-village .skill-panel{margin:12px 0 0;padding:0;border:0;box-shadow:none}.side-village .devp-body{grid-template-columns:1fr}.preview-notice{padding:10px 16px;background:#f4e2ac;color:#243c35;border-radius:8px}.timeline-roadmap{background:#f9f4e7;border:1px solid #b9a26e;border-radius:12px;padding:16px}.timeline-roadmap h2{font-size:20px;margin:0 0 5px}.timeline-roadmap p{font-size:13px}.timeline-roadmap .roadmap{display:flex;overflow-x:auto;gap:0;list-style:none;padding:10px 0;margin:0}.timeline-roadmap .roadmap>li{flex:0 0 140px;border:0;border-top:4px solid #b2bca4;padding:12px;display:flex;flex-direction:column}.timeline-roadmap .roadmap>li.rm-current{border-color:#a77a21;background:#eee2ba}.timeline-roadmap .rm-dot{display:none}.timeline-roadmap .rm-name{font-size:15px;padding:7px}.timeline-roadmap .rm-period{font-size:11px}.timeline-roadmap .rm-preview{font-size:11px}.timeline-dialog{width:min(1320px,96vw)!important;max-width:96vw!important;max-height:90dvh;overflow:auto}.timeline-dialog>header{display:flex;justify-content:space-between;align-items:center;gap:15px}.timeline-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;background:#fbf6e8;padding:12px 0;z-index:2}.timeline-controls label{display:flex;align-items:center;gap:8px}.timeline-track{display:flex;overflow:auto;align-items:stretch;gap:16px;padding:15px 0 25px;max-height:65vh}.timeline-era{flex:0 0 230px;border-top:5px solid #8caa99;border-radius:10px;background:#f4efe2;padding:16px;overflow-y:auto}.timeline-track[data-zoom="2"] .timeline-era{flex-basis:330px}.timeline-track[data-zoom="3"] .timeline-era{flex-basis:430px}.timeline-era.current{border-color:#b88a2e;background:#f5e6bc}.timeline-era h3{font-size:22px;margin:10px 0}.timeline-date{font-size:13px;color:#655e44}.timeline-status{font-size:13px;color:#236652}.timeline-event,.timeline-mission{background:#fffaf0;border:1px solid #d6d5bd;border-radius:9px;padding:12px;margin:10px 0;font-size:14px}.timeline-event p,.timeline-mission p{margin:6px 0}.timeline-mission{border-left:4px solid #43816c}@media(max-width:1150px){.layout{grid-template-columns:minmax(0,1fr) 310px;grid-template-areas:"map right" "left right"}.map-frame{height:76vh;min-height:520px}}@media(max-width:800px){.layout{grid-template-columns:1fr;grid-template-areas:"map" "right" "left"}.map-frame{height:72vh;min-height:420px}.side-right{grid-template-columns:1fr}.timeline-era{flex-basis:230px}.timeline-track[data-zoom="3"] .timeline-era{flex-basis:300px}.timeline-controls strong{font-size:12px}.timeline-dialog{padding:14px!important}.timeline-track{max-height:60vh}}
+
+.side-right #boardPeriod,.side-right #boardChapter,.side-right #boardNote{display:none}.side-right .board-head{margin-bottom:10px}.side-right .mission-cards{display:block}.mission-fold{border:1px solid #bba77b;border-radius:9px;background:#fff9e9;margin:8px 0;overflow:hidden}.mission-fold>summary{cursor:pointer;padding:12px 14px;font-size:16px;font-weight:750;min-height:44px;line-height:1.5}.mission-fold>summary:focus-visible{outline:3px solid #39745e;outline-offset:-3px}.mission-fold[open]>summary{background:#e9e3cc;border-bottom:1px solid #bba77b}.side-right .mission-fold .mission-card{margin:0;border:0;border-radius:0;padding:14px}.mission-fold .mission-card>h4{display:none}.missions .mission-title-only{display:block;width:100%;text-align:left;font-size:15px;line-height:1.5;min-height:40px;padding:9px 7px;white-space:normal}.missions>li{margin:4px 0}
+
+.reward-celebration{border:3px solid #c49a38;background:radial-gradient(circle at top,#fff1b9,#fcf7e7 65%);text-align:center}.reward-burst{font-size:78px;color:#b98717;line-height:1.2;text-shadow:0 0 22px #f7d67e;animation:rewardBurst .65s ease-out}.reward-gains{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:15px 0 22px}.reward-gains strong{padding:12px 15px;background:#246352;color:#fff7d9;border-radius:12px;font-size:20px;animation:rewardGain .65s ease-out both}.reward-gains strong:nth-child(2){animation-delay:.1s}.reward-gains strong:nth-child(3){animation-delay:.2s}.reward-celebration .receipts{text-align:left}@keyframes rewardBurst{from{transform:scale(.3) rotate(-40deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}@keyframes rewardGain{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}@media(prefers-reduced-motion:reduce){.reward-burst,.reward-gains strong{animation:none}}

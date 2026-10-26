@@ -170,7 +170,7 @@ export function createApp({ dataDir = process.env.DATA_DIR || join(ROOT, 'data')
     }
     if (method === 'POST' && path === '/api/answer') {
       const body = await readJson(req);
-      return send(res, 200, game.answer(needPlayer(), body.challengeId, body.choiceIndex));
+      return send(res, 200, game.answer(needPlayer(), body.challengeId, body.answerText ?? body.choiceIndex));
     }
     if(path==='/api/market'&&method==='GET')return send(res,200,game.marketList(needPlayer()));
     const marketRoutes={'/api/market':'marketPost','/api/market/accept':'marketAccept','/api/market/cancel':'marketCancel'};

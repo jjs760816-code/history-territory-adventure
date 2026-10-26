@@ -1,6 +1,6 @@
 import {randomBytes} from '../../lib/crypto-shim.mjs';
 import {hashToken,GameError} from '../../lib/game.mjs';
-const SCHEMA=`CREATE TABLE IF NOT EXISTS accounts(username TEXT PRIMARY KEY,player_id TEXT NOT NULL UNIQUE,password_hash TEXT NOT NULL,salt TEXT NOT NULL,role TEXT NOT NULL,reset_required INTEGER NOT NULL DEFAULT 0,failures INTEGER NOT NULL DEFAULT 0,locked_until INTEGER NOT NULL DEFAULT 0);CREATE TABLE IF NOT EXISTS admin_audit(id INTEGER PRIMARY KEY AUTOINCREMENT,actor TEXT NOT NULL,target TEXT NOT NULL,action TEXT NOT NULL,created_at INTEGER NOT NULL);`;
+const SCHEMA=`CREATE TABLE IF NOT EXISTS admin_preview_players(admin_id TEXT PRIMARY KEY,student_id TEXT NOT NULL UNIQUE);CREATE TABLE IF NOT EXISTS admin_preview_sessions(return_hash TEXT PRIMARY KEY,admin_id TEXT NOT NULL,student_id TEXT NOT NULL,expires INTEGER NOT NULL);CREATE TABLE IF NOT EXISTS accounts(username TEXT PRIMARY KEY,player_id TEXT NOT NULL UNIQUE,password_hash TEXT NOT NULL,salt TEXT NOT NULL,role TEXT NOT NULL,reset_required INTEGER NOT NULL DEFAULT 0,failures INTEGER NOT NULL DEFAULT 0,locked_until INTEGER NOT NULL DEFAULT 0);CREATE TABLE IF NOT EXISTS admin_audit(id INTEGER PRIMARY KEY AUTOINCREMENT,actor TEXT NOT NULL,target TEXT NOT NULL,action TEXT NOT NULL,created_at INTEGER NOT NULL);`;
 const username=v=>{if(typeof v!=='string'||!/^[A-Za-z0-9_가-힣]{3,16}$/.test(v)||/\d{7,}/.test(v))throw new GameError(400,'bad_username','아이디는 한글·영문·숫자 3~16자로, 연락처 없이 만들어 주세요.');return v.normalize('NFC').toLowerCase();};
 const password=v=>{if(typeof v!=='string'||v.length<8||v.length>64)throw new GameError(400,'bad_password','비밀번호는 8~64자로 만들어 주세요.');return v;};
 const hex=b=>Array.from(new Uint8Array(b),v=>v.toString(16).padStart(2,'0')).join('');
@@ -8,7 +8,52 @@ async function digest(p,salt,pepper){if(!pepper)throw new GameError(503,'auth_no
 async function matches(p,row,pepper){const h=await digest(p,row.salt,pepper);let d=h.length^row.password_hash.length;for(let i=0;i<h.length;i++)d|=h.charCodeAt(i)^row.password_hash.charCodeAt(i);return d===0;}
 export function initAccounts(db){db.exec(SCHEMA);}
 export function accountFor(db,playerId){const r=db.prepare('SELECT username,role,reset_required FROM accounts WHERE player_id=?').get(playerId);return r?{username:r.username,role:r.role,resetRequired:!!r.reset_required}:null;}
+const previewCookie=v=>`history_admin_preview=${v||''}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${v?3600:0}`;
+const previewValue=request=>(request.headers.get('Cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('history_admin_preview='))?.slice('history_admin_preview='.length)||'';
 export async function authRoute({db,game,path,body,method,request,env,token,cookie}){const playerId=game.playerIdForToken(token),current=playerId?accountFor(db,playerId):null;
+ const backup=previewValue(request),preview=backup?db.prepare('SELECT * FROM admin_preview_sessions WHERE return_hash=? AND expires>?').get(hashToken(backup),Date.now()):null;
+ const canReturn=preview&&preview.student_id===playerId&&accountFor(db,preview.admin_id)?.role==='admin';
+ if(path==='/api/auth/preview-status'&&method==='GET')return{data:{active:!!canReturn}};
+ if(path==='/api/auth/preview-return'&&method==='POST'){
+  if(!canReturn)throw new GameError(403,'no_preview','관리자가 시작한 학생 체험에서만 돌아갈 수 있어요.');
+  const newToken=randomBytes(32).toString('base64url');db.prepare('UPDATE players SET token_hash=? WHERE id=?').run(hashToken(newToken),preview.admin_id);
+  db.prepare('DELETE FROM admin_preview_sessions WHERE return_hash=?').run(hashToken(backup));
+  return{data:{ok:true},headers:{'Set-Cookie':[cookie(newToken),previewCookie(null)]}};
+ }
+ if(path==='/api/admin/preview-start'&&method==='POST'){
+  if(current?.role!=='admin')throw new GameError(403,'admin_only','관리자만 학생 체험을 시작할 수 있어요.');
+  let mapped=db.prepare('SELECT student_id FROM admin_preview_players WHERE admin_id=?').get(playerId);
+  if(!mapped){const created=game.createPlayer('학생체험');const id='체험_'+randomBytes(5).toString('hex'),salt=randomBytes(16).toString('hex');const hash=await digest(randomBytes(32).toString('base64url'),salt,env.AUTH_PEPPER);
+   db.prepare('INSERT INTO accounts(username,player_id,password_hash,salt,role) VALUES(?,?,?,?,?)').run(id,created.playerId,hash,salt,'student');
+   db.prepare('INSERT INTO admin_preview_players(admin_id,student_id) VALUES(?,?)').run(playerId,created.playerId);mapped={student_id:created.playerId};
+  }
+  const newToken=randomBytes(32).toString('base64url'),returnToken=randomBytes(32).toString('base64url');db.prepare('UPDATE players SET token_hash=? WHERE id=?').run(hashToken(newToken),mapped.student_id);
+  db.prepare('DELETE FROM admin_preview_sessions WHERE admin_id=? OR expires<=?').run(playerId,Date.now());
+  db.prepare('INSERT INTO admin_preview_sessions(return_hash,admin_id,student_id,expires) VALUES(?,?,?,?)').run(hashToken(returnToken),playerId,mapped.student_id,Date.now()+3600000);
+  db.prepare('INSERT INTO admin_audit(actor,target,action,created_at) VALUES(?,?,?,?)').run(current.username,accountFor(db,mapped.student_id).username,'student_preview',Date.now());
+  return{data:{ok:true},headers:{'Set-Cookie':[cookie(newToken),previewCookie(returnToken)]}};
+ }
+ if(path==='/api/auth/owner-accounts'&&method==='GET'){
+  if(!env.ADMIN_OWNER_EMAIL||request.headers.get('oai-authenticated-user-email')?.toLowerCase()!==env.ADMIN_OWNER_EMAIL.toLowerCase())throw new GameError(403,'owner_only','관리자 ChatGPT 본인 확인이 필요해요.');
+  return{data:{accounts:db.prepare("SELECT username FROM accounts WHERE role='admin' ORDER BY username").all()}};
+ }
+ if(path==='/api/auth/owner-session'&&method==='POST'){
+  if(!env.ADMIN_OWNER_EMAIL||request.headers.get('oai-authenticated-user-email')?.toLowerCase()!==env.ADMIN_OWNER_EMAIL.toLowerCase())throw new GameError(403,'owner_only','관리자 ChatGPT 본인 확인이 필요해요.');
+  if(current?.role==='admin'&&!body.username)return{data:{ok:true,role:'admin'}};
+  const admins=db.prepare("SELECT username,player_id FROM accounts WHERE role='admin' ORDER BY username").all();
+  let row=body.username?admins.find(a=>a.username===username(body.username)):admins.length===1?admins[0]:null;
+  if(body.username&&!row)throw new GameError(404,'no_admin','관리자 계정을 다시 선택해 주세요.');
+  if(admins.length>1&&!row)throw new GameError(409,'choose_admin','사용할 관리자 계정을 선택해 주세요.');
+  if(!row){
+    let id='잼스관리자';while(db.prepare('SELECT 1 FROM accounts WHERE username=?').get(id))id='관리자_'+randomBytes(4).toString('hex');
+    const created=game.createPlayer('잼스선생님'),salt=randomBytes(16).toString('hex');
+    const hash=await digest(randomBytes(32).toString('base64url'),salt,env.AUTH_PEPPER);
+    db.prepare('INSERT INTO accounts(username,player_id,password_hash,salt,role) VALUES(?,?,?,?,?)').run(id,created.playerId,hash,salt,'admin');row={username:id,player_id:created.playerId};
+  }
+  const newToken=randomBytes(32).toString('base64url');db.prepare('UPDATE players SET token_hash=? WHERE id=?').run(hashToken(newToken),row.player_id);
+  db.prepare('INSERT INTO admin_audit(actor,target,action,created_at) VALUES(?,?,?,?)').run(row.username,row.username,'owner_session',Date.now());
+  return{data:{ok:true,role:'admin'},headers:{'Set-Cookie':cookie(newToken)}};
+ }
  if(path==='/api/auth/register'&&method==='POST'){if(db.prepare('SELECT COUNT(*) n FROM accounts').get().n>=200)throw new GameError(503,'classroom_full','시험 운영 계정 정원이 찼어요. 선생님께 알려 주세요.');const id=username(body.username),pw=password(body.password);if(db.prepare('SELECT 1 FROM accounts WHERE username=?').get(id))throw new GameError(409,'username_taken','이미 사용 중인 아이디예요. 다른 아이디를 골라 주세요.');const role=env.ADMIN_OWNER_EMAIL&&request.headers.get('oai-authenticated-user-email')?.toLowerCase()===env.ADMIN_OWNER_EMAIL.toLowerCase()?'admin':'student';const salt=randomBytes(16).toString('hex'),hash=await digest(pw,salt,env.AUTH_PEPPER);let p=playerId;if(!p||current){const result=game.createPlayer(id.slice(0,12));p=result.playerId;}const newToken=randomBytes(32).toString('base64url');db.prepare('UPDATE players SET token_hash=? WHERE id=?').run(hashToken(newToken),p);db.prepare('INSERT INTO accounts(username,player_id,password_hash,salt,role) VALUES(?,?,?,?,?)').run(id,p,hash,salt,role);return{data:{ok:true,role},status:201,headers:{'Set-Cookie':cookie(newToken)}};}
  if(path==='/api/auth/owner-password'&&method==='POST'){if(!env.ADMIN_OWNER_EMAIL||request.headers.get('oai-authenticated-user-email')?.toLowerCase()!==env.ADMIN_OWNER_EMAIL.toLowerCase())throw new GameError(403,'owner_only','관리자 ChatGPT 본인 확인이 필요해요.');const id=username(body.username),row=db.prepare("SELECT * FROM accounts WHERE username=? AND role='admin'").get(id);if(!row)throw new GameError(404,'no_admin','관리자 아이디를 확인하거나 처음이면 아이디를 만드세요.');const salt=randomBytes(16).toString('hex'),hash=await digest(password(body.password),salt,env.AUTH_PEPPER);db.prepare('UPDATE accounts SET password_hash=?,salt=?,reset_required=0,failures=0,locked_until=0 WHERE username=?').run(hash,salt,id);return{data:{ok:true,notice:'새 비밀번호로 로그인하세요.'}};}
  if(path==='/api/auth/login'&&method==='POST'){const id=username(body.username),pw=password(body.password),row=db.prepare('SELECT * FROM accounts WHERE username=?').get(id);if(row?.locked_until>Date.now())throw new GameError(429,'login_locked','여러 번 틀렸어요. 잠시 뒤 다시 시도하거나 선생님께 초기화를 요청하세요.');if(!row||!await matches(pw,row,env.AUTH_PEPPER)){if(row)db.prepare('UPDATE accounts SET failures=failures+1,locked_until=? WHERE username=?').run(row.failures>=4?Date.now()+15*60*1000:0,id);throw new GameError(401,'bad_login','아이디 또는 비밀번호를 확인하세요.');}const newToken=randomBytes(32).toString('base64url');db.prepare('UPDATE players SET token_hash=? WHERE id=?').run(hashToken(newToken),row.player_id);db.prepare('UPDATE accounts SET failures=0,locked_until=0 WHERE username=?').run(id);return{data:{ok:true,resetRequired:!!row.reset_required},headers:{'Set-Cookie':cookie(newToken)}};}

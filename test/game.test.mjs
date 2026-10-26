@@ -22,8 +22,8 @@ describe('콘텐츠', () => {
     for (const q of QUESTIONS) {
       assert.ok(!ids.has(q.id)); ids.add(q.id);
       for (const k of ['id', 'version', 'era', 'topic', 'objective', 'difficulty', 'question', 'explanation']) assert.ok(q[k], `${q.id}.${k}`);
-      assert.equal(q.choices.length, 4);
-      assert.equal(new Set(q.choices).size, 4, q.id);
+      assert.equal(q.choices.length, q.type === 'ox' ? 2 : 4);
+      assert.equal(new Set(q.choices).size, q.choices.length, q.id);
       assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < 4);
       assert.equal(q.reviewStatus, 'pending');
       assert.ok(q.sources.length > 0);
