@@ -14,12 +14,14 @@
   <script src="timeline.js" defer></script><script src="development.js" defer></script>
   <script src="skills.js" defer></script>
   <script src="photos.js" defer></script>
+  <script src="resume.js" defer></script>
   <script src="auth.js" defer></script>
   <script src="avatar.js" defer></script>
 
   <script src="app.js" defer></script>
   <script src="inquiry.js" defer></script>
   <link rel="stylesheet" href="development.css">
+  <link rel="stylesheet" href="styles.css">
 <meta name="google-site-verification" content="srMHRmIUMNhQUu9WLy5Lcny2qySiH5LN8ShRuisrvLQ"><meta name="naver-site-verification" content="6f9adcdc5aea6b44b74e221afa039e8446e1896d"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#183d35"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="잼스"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png"><link rel="stylesheet" href="/pwa.css"><script src="/pwa.js" defer></script><link rel="stylesheet" href="/scene.css"><script src="/scene.js" defer></script></head>
 <body>
   <header class="topbar">
@@ -30,7 +32,7 @@
         <p class="brand-sub" id="demoNotice">로컬 1인 시연판 · 온라인 경쟁 미구현</p>
       </div>
     </div>
-    <div class="header-session-controls" aria-label="로그인과 로그아웃"><button type="button" id="headerLoginBtn">로그인</button><button type="button" id="logoutBtn" class="logout-button" hidden>로그아웃</button></div>
+    <div class="header-session-controls" aria-label="로그인과 로그아웃"><button type="button" id="headerLoginBtn">로그인</button><button type="button" id="logoutBtn" class="logout-button" hidden>로그아웃</button><p id="syncStatus" class="sync-status" role="status" aria-live="polite" hidden></p></div>
     <nav class="topnav" id="topnav" aria-label="게임 메뉴" hidden>
       <button type="button" id="missionBell" class="bell" hidden>새 미션 <span id="missionBellCount">0</span></button>
       <button type="button" id="storyBtn">이야기·안내</button>
@@ -189,7 +191,10 @@
 
   <dialog id="logoutDialog" class="dlg" aria-labelledby="logoutHeading">
     <h2 id="logoutHeading">로그아웃할까요?</h2>
-    <p>온라인 게임의 학습 기록과 아바타는 저장돼요. 같은 아이디와 비밀번호로 다시 로그인할 수 있어요.</p>
+    <p id="logoutInfo">온라인 게임의 학습 기록과 아바타는 저장돼요. 같은 아이디와 비밀번호로 다시 로그인할 수 있어요.</p>
+    <p class="small">로그아웃하면 이 기기의 로그인 상태가 서버에서도 끝나요. 로그아웃하지 않아도 브라우저의 쿠키·사이트 데이터를 지우면 다시 로그인해야 해요.</p>
+    <p class="error" id="logoutPending" hidden></p>
+    <label class="shared-device"><input type="checkbox" id="logoutShared"> 여러 사람이 쓰는 기기예요 · 이 기기에 기억한 아이디와 풀던 문제·답 초안도 지우기</label>
     <div class="actions-row">
       <button type="button" data-close autofocus>취소</button>
       <button type="button" id="logoutConfirmBtn">로그아웃</button>
