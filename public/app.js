@@ -16,6 +16,15 @@ let siteFocus = null;          // 역사 지도에서 고른 유적/섬
 let STORY = null;              // assets/story.json (배경 이야기·게임 안내)
 let freshSession = false;      // 이번에 새로 시작한 탐험대인지(배경 이야기 자동 표시)
 const popupQueue = [];         // 미션 알림 대기열(다른 대화상자가 닫힌 뒤에만 띄움)
+// 이어 하기(public/resume.js): 탐험대(player.ref)별로 보기·지역·풀던 문제·답 초안·보내지 못한 답을 이 브라우저에 보관한다.
+// 판정·보상은 서버만 한다. 보관한 답은 같은 요청 번호로 다시 보내 서버가 한 번만 처리하게 한다.
+const RESUME_STORE = window.HistoryResume.createResumeStore({ storage: (() => { try { return window.localStorage; } catch { return null; } })() });
+let RESUME = null;             // 지금 로그인한 탐험대의 보관함
+let currentQuiz = null;        // 열려 있는 문제 창 { ch, choices, sync }
+let authBlocked = false;       // 로그인이 끊겨 보관한 답을 보낼 수 없음(연결 오류처럼 되풀이하지 않음)
+// 웹 체험판(Pages)은 /api 가 브라우저 안에 있어 인터넷이 끊겨도 보낼 수 있다.
+const netOnline = () => document.documentElement.dataset.web === 'pages' || navigator.onLine !== false;
+const SENDER = window.HistoryResume.createSender({ post: postAnswer, isOnline: netOnline });
 const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 // 저장소 하위 경로(GitHub Pages)에서도 맞는 주소가 되도록 문서 기준 상대 경로로 만든다.
 const assetUrl = (p) => new URL(p, document.baseURI).href;
@@ -75,6 +84,15 @@ async function api(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+// 답 보내기 전용: 연결 오류는 예외로, 서버 응답은 { status, data } 로 돌려준다(resume.js 가 분류).
+// 성공 응답의 본문이 끊겨 읽지 못하면 저장 여부를 알 수 없으므로 연결 오류로 본다.
+async function postAnswer(path, body) {
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) });
+  let data = null;
+  try { data = await res.json(); } catch { if (res.ok) throw new Error('응답을 끝까지 받지 못했어요.'); }
+  return { status: res.status, data: data || {} };
+}
+
 function toast(msg, kind = '') {
   const t = $('toast');
   t.textContent = msg;
@@ -115,8 +133,12 @@ async function boot() {
   STORY = story;
   fillNotices();
   setupStatic();
-  window.HistoryAuth?.configure(META);
-  if(!META.demo.authRequired)$('startButton').textContent='탐험 시작';
+  window.HistoryAuth?.configure(META, RESUME_STORE);
+  if(!META.demo.authRequired){
+    $('startButton').textContent='탐험 시작';
+    // 닉네임판은 비밀번호가 없어 쿠키가 유일한 열쇠다.
+    $('logoutInfo').textContent='이 시연판은 닉네임만 쓰기 때문에, 로그아웃하면 이 탐험대로 다시 들어올 수 없어요. 같은 기기에서 이어 하려면 로그아웃하지 말고 창만 닫으세요.';
+  }
   $('startButton').disabled=false;
   // Optional photos must not delay account setup or game startup.
   try{Promise.resolve(window.HistoryPhotos?.init()).catch(()=>{});}catch{}
@@ -130,7 +152,7 @@ async function boot() {
   } catch (e) {
     if(e.status===401){
       try{if(await window.HistoryAuth?.resumeOwner()){STATE=await api('/api/state');showGame();return;}}catch(ownerError){$('startError').textContent=ownerError.message;}
-    }else toast(e.message);
+    }else toast(e.status ? e.message : '서버에 연결하지 못했어요. 인터넷이 연결되면 새로고침해 주세요. 이 기기에 보관한 풀던 문제와 답은 그대로 있어요.');
     $('startScreen').hidden = false;
   }
 }
@@ -170,12 +192,21 @@ function setupStatic() {
     } catch (e) { $('startError').textContent = e.message; }
   });
   $('quickStartQuiz').addEventListener('click',()=>{const region=META.regions.find(r=>regionClass(r)!=='locked'&&regionClass(r)!=='own')||META.regions.find(r=>regionClass(r)!=='locked');if(region){if(mapView!=='game')setView('game');selectRegion(region.id);}else toast('현재 도전할 수 있는 지역이 없어요.');});
-  $('logoutBtn').addEventListener('click', () => $('logoutDialog').showModal());
+  $('logoutBtn').addEventListener('click', () => {
+    const p = RESUME?.pending();
+    $('logoutPending').hidden = !p;
+    $('logoutPending').textContent = p ? '아직 서버 저장을 확인하지 못한 답이 있어요. 인터넷 연결을 확인해 주세요. 공용 기기 지우기를 고르지 않으면 같은 아이디로 다시 로그인할 때 이어서 보내요.' : '';
+    $('logoutDialog').showModal();
+  });
   $('logoutConfirmBtn').addEventListener('click', async () => {
     const button = $('logoutConfirmBtn');
     button.disabled = true;
     try {
+      if (RESUME?.pending()) await flushPending();
       await api('/api/logout', { method: 'POST' });
+      // 공용 기기: 이 브라우저의 이어 하기 기록과 기억한 아이디를 모두 지운다(서버 기록은 그대로).
+      if ($('logoutShared').checked) RESUME_STORE.clearAll();
+      RESUME = null;
       window.HistoryAuth?.markSignedOut();
       location.reload();
     } catch (e) {
@@ -188,6 +219,17 @@ function setupStatic() {
   // 어떤 대화상자든 닫히면 기다리던 미션 알림을 띄운다(문제 풀이·이야기 도중에는 띄우지 않음).
   document.querySelectorAll('dialog').forEach((d) => d.addEventListener('close', () => setTimeout(flushPopups, 120)));
   $('missionBell').addEventListener('click', openMissionReplay);
+  // 답하지 않고 닫은 문제는 새로고침해도 저절로 다시 열지 않는다(서버의 도전은 만료 전까지 그대로).
+  $('quizDialog').addEventListener('close', () => {
+    if ($('quizDialog').open) return; // 닫힌 뒤 곧바로 다른 문제를 연 경우
+    const q = currentQuiz;
+    currentQuiz = null;
+    if (q && q.choices.dataset.answered !== 'yes' && RESUME?.pending()?.challengeId !== q.ch.challengeId) RESUME?.dismissChallenge(q.ch.challengeId);
+  });
+  window.addEventListener('online', () => { updateSync(); flushPending(); });
+  window.addEventListener('offline', updateSync);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') flushPending(); });
+  setInterval(() => { if (RESUME?.pending() && netOnline()) flushPending(); }, 20000);
   $('storyBtn').addEventListener('click', () => openStory('story'));
   $('openStory').addEventListener('click', () => openStory('story'));
   $('openTutorial').addEventListener('click', () => openStory('tutorial'));
@@ -260,6 +302,10 @@ function setExpanded(on) {
 }
 
 function showGame() {
+  RESUME = RESUME_STORE.forAccount(STATE.player.ref);
+  authBlocked = false;
+  // 아이디만 기억한다(비밀번호·토큰은 저장하지 않음). 관리자 학생 체험 계정은 기억하지 않는다.
+  if (STATE.account?.username && !STATE.account.username.startsWith('체험_')) RESUME_STORE.rememberUser(STATE.account.username);
   $('startScreen').hidden = true;
   $('gameScreen').hidden = false;
   $('topnav').hidden = false;
@@ -271,6 +317,107 @@ function showGame() {
   setGuide(`${STATE.player.nickname} 탐험대, 반가워요! 지도에서 구역을 골라 문제를 풀거나, 아래 사건판의 미션에 도전해 보세요.`);
   requestAnimationFrame(layoutLabels);
   freshSession = false;
+  resumeSession();
+}
+
+// ── 이어 하기 ──
+// 서버 상태(activeChallenge)가 기준이다. 브라우저 보관함은 보기·지역·초안·보내지 못한 답만 보탠다.
+function resumeSession() {
+  const snap = RESUME.snapshot();
+  const form=$('createForm');form.reset();
+  for(const name of ['era','regionId','question','explanation','source','answer','choice0','choice1','choice2','choice3']) {
+    const value=snap.submission?.[name];const field=form.elements.namedItem(name);
+    if(field&&typeof value==='string'&&value.length<=300)field.value=value;
+  }
+  const ui = snap.ui || {};
+  if (ui.regionId && regionMeta(ui.regionId)) {
+    // 지역을 다시 고르기만 하고 새 문제는 받지 않는다(selectRegion 은 문제를 새로 받음).
+    selectedRegion = ui.regionId;
+    renderMap(); renderRegionSelect(); renderRegionPanel();
+  }
+  if (ui.view === 'history' && mapView !== 'history') { mapView = 'history'; applyView(); }
+  const plan = window.HistoryResume.reconcile(snap, STATE.activeChallenge);
+  if (plan.clearChallenge) RESUME.finishChallenge(snap.challenge.challengeId);
+  const ttlMin = Math.round((META.rules?.challengeTtlMs || 1800000) / 60000);
+  if (plan.notice === 'expired') toast(`풀던 문제는 ${ttlMin}분이 지나 만료됐어요. 보상 없이 닫혔으니 새 문제를 받아 주세요.`);
+  else if (plan.notice === 'stale') toast('풀던 문제는 이미 처리됐거나 다른 문제로 바뀌었어요. 서버에 저장된 기록을 보여 줘요.');
+  if (plan.pending) {
+    if (plan.open) showQuiz(plan.open, { pending: plan.pending });
+    flushPending();
+  } else if (plan.open) {
+    showQuiz(plan.open, { draft: plan.draft });
+    toast('풀던 문제를 이어서 열었어요. 저장된 답은 아직 없어요.');
+  }
+  updateSync();
+}
+
+const SYNC_TEXT = {
+  unsent: '저장 대기 · 보내지 못한 답 1개가 이 기기에 있어요. 연결되면 자동으로 보내요.',
+  sending: '답을 서버에 보내는 중… 아직 저장 확인 전이에요.',
+  uncertain: '저장 확인 중 · 답을 보냈지만 확인을 받지 못했어요. 다시 확인해요(보상은 한 번만 받아요).',
+  auth: '로그인이 끝났어요 · 다시 로그인하면 보관한 답을 이어서 보내요.',
+};
+function updateSync(savedNow = false) {
+  const box = $('syncStatus');
+  const p = RESUME?.pending();
+  clearTimeout(updateSync._t);
+  let text = '';
+  let kind = '';
+  if (p) { text = authBlocked ? SYNC_TEXT.auth : SYNC_TEXT[p.status] || SYNC_TEXT.uncertain; kind = 'wait'; }
+  else if (RESUME && !netOnline()) { text = '인터넷 연결이 끊겼어요 · 풀던 문제와 답 초안은 이 기기에 보관돼요.'; kind = 'wait'; }
+  else if (savedNow) { text = '✓ 서버에 저장했어요'; kind = 'ok'; updateSync._t = setTimeout(() => updateSync(), 4000); }
+  box.textContent = text;
+  box.className = `sync-status ${kind}`;
+  box.hidden = !text;
+}
+
+// 보관한 답을 서버로 보낸다. 문제 창이 열려 있으면 그 창에, 아니면 알림으로 결과를 보여 준다.
+async function flushPending() {
+  if (!RESUME || authBlocked) { updateSync(); return; }
+  const p = RESUME.pending();
+  if (!p) { updateSync(); return; }
+  updateSync();
+  const out = await SENDER.send(RESUME);
+  const q = currentQuiz;
+  if (q && q.ch.challengeId === p.challengeId && $('quizDialog').open) handleSendOutcome(out, q.ch, q.choices, p.answer.answerText ?? p.answer.choiceIndex);
+  else await handleBackgroundOutcome(out);
+  updateSync(out.kind === 'saved');
+}
+
+async function refreshState() {
+  try { STATE = await api('/api/state'); render(); } catch (e) { if (e.status === 401) authBlocked = true; }
+}
+
+async function handleBackgroundOutcome(out) {
+  if (out.kind === 'saved') {
+    const r = out.result;
+    STATE = r.state;
+    render();
+    queueDone(r.missionsCompleted);
+    toast(r.correct ? '보관했던 답을 서버에 저장했어요. 정답이에요!' : '보관했던 답을 서버에 저장했어요. 해설은 학습 기록에서 볼 수 있어요.', r.correct ? 'gold' : '');
+    queueNewMissions('풀이 진행에 맞춰 새 미션을 추천해요. 목표와 보상을 살펴보세요.');
+    setTimeout(flushPopups, 400);
+  } else if (out.kind === 'auth') {
+    authBlocked = true;
+    toast('로그인이 끝났어요. 다시 로그인하면 보관한 답을 이어서 보내요.');
+  } else if (out.kind === 'expired') {
+    toast('보관했던 답은 문제 시간이 지나 만료됐어요. 보상 없이 닫혔으니 새 문제를 받아 주세요.');
+    await refreshState();
+  } else if (out.kind === 'gone') {
+    toast('보관했던 답은 이미 처리된 문제예요. 서버에 저장된 기록을 불러왔어요.');
+    await refreshState();
+  } else if (out.kind === 'rejected') {
+    toast(out.message || '보관했던 답을 서버가 받지 않았어요.');
+  }
+}
+
+// 새 문제를 받기 전에 보관한 답부터 보낸다(새 문제를 받으면 서버가 이전 도전을 지우기 때문).
+async function readyForNew() {
+  if (!RESUME?.pending()) return true;
+  await flushPending();
+  if (!RESUME?.pending()) return true;
+  toast('아직 서버에 저장하지 못한 답이 있어요. 연결되면 그 답을 먼저 보낸 뒤 새 문제를 받을 수 있어요.');
+  return false;
 }
 
 function setGuide(text) { $('guideLine').textContent = text; }
@@ -469,6 +616,7 @@ function openMission(id) {
 }
 
 async function startMission(id) {
+  if (!(await readyForNew())) return;
   try { showQuiz(await api(`/api/missions/${id}/challenge`, { method: 'POST' })); } catch (e) { toast(e.message); }
 }
 
@@ -800,6 +948,7 @@ function layoutHistoryLabels(fu, pad, placed) {
 
 function setView(v) {
   mapView = v;
+  RESUME?.saveUi({ view: v });
   siteFocus = null;
   applyView();
   if (v === 'game') $('siteInfo').hidden = true;
@@ -924,6 +1073,7 @@ function renderRegionSelect() {
 
 function selectRegion(id) {
   selectedRegion = id;
+  RESUME?.saveUi({ regionId: id });
   renderMap();
   renderRegionSelect();
   renderRegionPanel();
@@ -978,18 +1128,21 @@ function renderRegionPanel() {
 async function startRegion(regionId) {
   if(regionChallengePending)return;
   regionChallengePending=true;
-  try { showQuiz(await api(`/api/regions/${regionId}/challenge`, { method: 'POST' })); } catch (e) { toast(e.message); }
+  try { if (!(await readyForNew())) return; showQuiz(await api(`/api/regions/${regionId}/challenge`, { method: 'POST' })); } catch (e) { toast(e.message); }
   finally{regionChallengePending=false;}
 }
 async function startReview() {
   try {
     $('historyDialog').close();
+    if (!(await readyForNew())) return;
     showQuiz(await api('/api/review/challenge', { method: 'POST' }));
   } catch (e) { toast(e.message); }
 }
 
-function showQuiz(ch) {
+// draft: 새로고침 전에 쓰던 단답 초안, pending: 보냈지만 저장 확인을 못 받은 답(이어 보내기 중)
+function showQuiz(ch, { draft = null, pending = null } = {}) {
   const q = ch.question;
+  RESUME?.setChallenge(ch);
   const body = $('quizBody');
   const head = el('div', { class: 'pills' },
     el('span', { class: 'pill', text: eraName(q.era) }),
@@ -1004,6 +1157,8 @@ function showQuiz(ch) {
   const choices = el('div', { class: 'quiz-choices' });
   if (q.type === 'short') {
     const input = el('input', { type: 'text', maxlength: '80', autocomplete: 'off', placeholder: '초성을 보고 낱말로 답해요', 'aria-label': '단답형 정답', class: 'short-answer-input' });
+    input.value = pending?.answer.answerText ?? draft ?? '';
+    input.addEventListener('input', () => RESUME?.saveDraft(ch.challengeId, input.value)); // 새로고침·창 닫힘 대비 초안 보관
     const form = el('form', { class: 'short-answer-form' }, el('p', { class: 'initial-hint', text: `초성 도움: ${q.answerHint} · ${q.answerLength}글자` }), input, el('button', { type: 'submit', class: 'btn primary', text: '답 제출하기' }));
     form.addEventListener('submit', e => {e.preventDefault(); if (!input.value.trim()) {input.focus();return;} submitAnswer(ch, input.value.trim(), choices);});
     choices.append(form);
@@ -1014,6 +1169,8 @@ function showQuiz(ch) {
   });
   const hintBox = el('div', { class: 'quiz-hints' });
   (q.hints || []).forEach((hint, i) => hintBox.append(el('details', {}, el('summary', { text: `힌트 ${i + 1} 보기${i === 0 ? ' · 생각의 방향' : ' · 개념 연결'}` }), el('p', { text: hint }))));
+  const sync = el('div', { class: 'quiz-sync', role: 'status', 'aria-live': 'polite', hidden: true });
+  currentQuiz = { ch, choices, sync };
   replaceContent(body,
     el('div', { class: 'dlg-head' }, el('h2', { text: title }),
       el('button', { type: 'button', class: 'close', text: '닫기', onclick: () => $('quizDialog').close() })),
@@ -1023,18 +1180,108 @@ function showQuiz(ch) {
     el('p', { class: 'quiz-q', text: q.text }),
     window.HistoryPhotos?.figure(q.topic+' '+q.text,q.era,true),
     choices,
+    sync,
     hintBox,
-    el('p', { class: 'small', text: `참고 자료(확인 범위는 검토 기록 참고): ${q.sources.join(', ')}` }));
-  $('quizDialog').showModal();
+    el('p', { class: 'small', text: `참고 자료(확인 범위는 검토 기록 참고): ${(q.sources || []).join(', ')}` }));
+  if (!$('quizDialog').open) $('quizDialog').showModal();
+  currentQuiz = { ch, choices, sync }; // 이전 창의 close 이벤트가 지우지 않게 다시 둔다
+  if (pending) {
+    const idx = pending.answer.answerText ?? pending.answer.choiceIndex;
+    lockChoices(ch, choices, idx);
+    setQuizSync(sync, pending.status === 'unsent' ? 'unsent' : 'uncertain');
+  }
 }
 
-async function submitAnswer(ch, idx, choicesBox) {
-  if (choicesBox.dataset.submitting === 'yes' || choicesBox.dataset.answered === 'yes') return;
+function lockChoices(ch, choicesBox, idx) {
   choicesBox.dataset.submitting = 'yes';
   const btns = [...choicesBox.querySelectorAll('button')];
   btns.forEach((b) => { b.disabled = true; });
-  try {
-    const r = await api('/api/answer', { method: 'POST', body: { challengeId: ch.challengeId, ...(ch.question.type === 'short' ? { answerText: idx } : { choiceIndex: idx }) } });
+  choicesBox.querySelectorAll('input').forEach((i) => { i.disabled = true; });
+  if (ch.question.type !== 'short') btns[idx]?.classList.add('picked-wait');
+  return btns;
+}
+function unlockChoices(choicesBox) {
+  choicesBox.dataset.submitting = 'no';
+  choicesBox.querySelectorAll('button, input').forEach((b) => { b.disabled = false; b.classList.remove('picked-wait'); });
+}
+
+// 문제 창 안의 저장 상태. 서버가 확인하기 전에는 '저장됨'이라고 말하지 않는다.
+function setQuizSync(box, kind, message) {
+  const texts = {
+    sending: '답을 서버에 보내는 중이에요… 아직 저장 확인 전이에요.',
+    unsent: '인터넷이 끊겨 답을 아직 보내지 못했어요. 답은 이 기기에 보관했고, 연결되면 자동으로 보내요.',
+    uncertain: '답을 보냈지만 서버의 저장 확인을 받지 못했어요. 연결되면 다시 확인해요. 여러 번 보내도 보상은 한 번만 받아요.',
+    auth: '로그인이 끝나 답을 보내지 못했어요. 답은 이 기기에 보관했어요. 새로고침해서 같은 아이디로 다시 로그인하면 이어서 보내요.',
+  };
+  const retry = kind === 'unsent' || kind === 'uncertain'
+    ? el('button', { type: 'button', text: '지금 다시 보내기', onclick: () => flushPending() })
+    : null;
+  replaceContent(box, el('p', { class: `sync-line ${kind}`, text: message || texts[kind] || '' }), retry);
+  box.hidden = !(message || texts[kind]);
+}
+
+// 답 보내기: ① 이 기기에 먼저 보관 → ② 서버로 전송 → ③ 서버가 확정한 결과만 보여 준다.
+// 연결이 끊기면 답은 보관한 채로 두고, 연결되면 같은 요청 번호로 다시 보낸다(서버가 한 번만 처리).
+async function submitAnswer(ch, idx, choicesBox) {
+  if (choicesBox.dataset.submitting === 'yes' || choicesBox.dataset.answered === 'yes') return;
+  const sync = currentQuiz?.choices === choicesBox ? currentQuiz.sync : null;
+  const queued = RESUME ? RESUME.queueAnswer(ch.challengeId, idx) : null;
+  if (!queued) {
+    toast('아직 서버에 저장하지 못한 다른 답이 있어요. 연결되면 그 답을 먼저 보내요.');
+    flushPending();
+    return;
+  }
+  lockChoices(ch, choicesBox, idx);
+  if (sync) setQuizSync(sync, 'sending');
+  updateSync();
+  const out = await SENDER.send(RESUME);
+  handleSendOutcome(out, ch, choicesBox, idx);
+  updateSync(out.kind === 'saved');
+}
+
+function handleSendOutcome(out, ch, choicesBox, idx) {
+  if (choicesBox.dataset.answered === 'yes') return; // 같은 결과를 두 번 그리지 않음
+  const sync = currentQuiz?.choices === choicesBox ? currentQuiz.sync : choicesBox.parentElement?.querySelector('.quiz-sync');
+  const say = (kind, message) => { if (sync) setQuizSync(sync, kind, message); };
+  const ttlMin = Math.round((META.rules?.challengeTtlMs || 1800000) / 60000);
+  switch (out.kind) {
+    case 'saved':
+      if (sync) sync.hidden = true;
+      showAnswerResult(ch, out.result, choicesBox, idx);
+      return;
+    case 'offline':
+      say(out.uncertain ? 'uncertain' : 'unsent');
+      return;
+    case 'retry':
+      say('uncertain', `서버가 바빠 저장 확인을 받지 못했어요. 답은 이 기기에 보관했고 잠시 뒤 다시 보내요. ${out.message || ''}`.trim());
+      return;
+    case 'auth':
+      authBlocked = true;
+      say('auth');
+      return;
+    case 'expired':
+      choicesBox.dataset.answered = 'yes';
+      say('expired', `문제를 받은 지 ${ttlMin}분이 지나 만료됐어요. 이 답은 채점·보상 없이 닫혔어요. 새 문제를 받아 주세요.`);
+      refreshState();
+      return;
+    case 'gone':
+      choicesBox.dataset.answered = 'yes';
+      say('gone', '이 문제는 이미 처리됐어요(다른 창·기기에서 답했거나 새 문제를 받았어요). 서버에 저장된 기록을 불러왔어요.');
+      refreshState();
+      return;
+    case 'rejected':
+      unlockChoices(choicesBox);
+      say('rejected', out.message || '답을 다시 확인해 주세요.');
+      return;
+    default: // 'none': 보낼 답이 없음
+  }
+}
+
+// 서버가 확정한 판정 결과 그리기(새로 받은 결과든, 다시 보내 받은 저장 결과든 같은 화면)
+function showAnswerResult(ch, r, choicesBox, idx) {
+  const btns = [...choicesBox.querySelectorAll('button')];
+  btns.forEach((b) => b.classList.remove('picked-wait'));
+  {
     const oldCollectionIds=new Set((STATE.development?.collections||[]).filter(c=>c.owned).map(c=>c.id));
     STATE = r.state;
     const gainedCollections=(STATE.development?.collections||[]).filter(c=>c.owned&&!oldCollectionIds.has(c.id));
@@ -1057,6 +1304,7 @@ async function submitAnswer(ch, idx, choicesBox) {
     if(r.upkeep)lines.push(`학습 4회 식량 정산: −${r.upkeep.grainLost}${r.upkeep.shortage?' (식량 부족 · 인구·영토 손실 없음)':''}`);
     for(const c of gainedCollections)lines.push(`새 디지털 카드 「${c.name}」: ${c.effectText}`);
     lines.push(`판정: ${judgeShort()}`);
+    if (r.replayed) lines.push('연결이 끊긴 사이 서버가 이미 저장한 결과를 다시 불러왔어요. 보상은 한 번만 받아요.');
     lines.forEach((t) => box.append(el('p', { text: t })));
     if (r.newCards.length) {
       const reveal = el('div', { class: 'card-reveal' });
@@ -1072,7 +1320,8 @@ async function submitAnswer(ch, idx, choicesBox) {
       next = done
         ? el('button', { type: 'button', class: 'primary', text: '사건판으로', onclick: () => { $('quizDialog').close(); $('eventBoard').scrollIntoView({ block: 'start' }); } })
         : el('button', { type: 'button', class: 'primary', text: '이 미션 다음 문제', onclick: () => startMission(ch.missionId) });
-    } else if (ch.regionId) next = el('button', { type: 'button', class: 'primary', text: '다음 문제', onclick: () => startRegion(ch.regionId) });
+    } else if (ch.mode === 'defense' || ch.mode === 'collection') next = null; // 이어 연 방어·유물 문제: 다음 문제는 각 메뉴에서
+    else if (ch.regionId) next = el('button', { type: 'button', class: 'primary', text: '다음 문제', onclick: () => startRegion(ch.regionId) });
     else next = el('button', { type: 'button', class: 'primary', text: '다른 복습 문제', onclick: startReview });
     box.append(el('div', { class: 'actions' }, next,
       el('button', { type: 'button', text: '지도로 돌아가기', onclick: () => $('quizDialog').close() })));
@@ -1095,10 +1344,6 @@ async function submitAnswer(ch, idx, choicesBox) {
     if (r.newCards.length) setTimeout(() => sfx('card'), 900);
     render();
     queueNewMissions('풀이 진행에 맞춰 새 미션을 추천해요. 목표와 보상을 살펴보세요.');
-  } catch (e) {
-    choicesBox.dataset.submitting = 'no';
-    toast(e.message);
-    $('quizDialog').close();
   }
 }
 
@@ -1357,6 +1602,9 @@ function setupCreateForm() {
       el('input', { type: 'radio', name: 'answer', value: String(i), 'aria-label': `${i + 1}번 보기가 정답`, required: i === 0 }),
       el('input', { type: 'text', name: `choice${i}`, maxlength: '60', placeholder: `${i + 1}번 보기`, required: true })));
   }
+  const saveCreateDraft=()=>{if(!RESUME)return;const values={};for(const [key,value]of new FormData($('createForm')))if(typeof value==='string')values[key]=value.slice(0,300);RESUME.saveSubmission(values);};
+  $('createForm').addEventListener('input',saveCreateDraft);
+  $('createForm').addEventListener('change',saveCreateDraft);
   $('createForm').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const f = ev.target;
@@ -1372,6 +1620,7 @@ function setupCreateForm() {
     try {
       await api('/api/submissions', { method: 'POST', body });
       f.reset();
+      RESUME?.saveSubmission(null);
       toast('형식 검사를 통과해 “검토 대기”로 저장했어요. (AI 검토 미연결)');
       await renderSubmissions();
     } catch (e) {
@@ -1470,5 +1719,5 @@ boot().catch((e) => { document.body.prepend(el('p', { class: 'error', text: `시
 
 window.addEventListener('history:refresh',async()=>{try{STATE=await api('/api/state');render();}catch(e){toast(e.message);}});
 
-window.addEventListener('history:collection',async e=>{try{showQuiz(await api('/api/development/collection',{method:'POST',body:{collectionId:e.detail}}));}catch(err){toast(err.message);}});
+window.addEventListener('history:collection',async e=>{if(!(await readyForNew()))return;try{showQuiz(await api('/api/development/collection',{method:'POST',body:{collectionId:e.detail}}));}catch(err){toast(err.message);}});
 window.addEventListener('history:avatar-state',e=>{STATE=e.detail;render();});

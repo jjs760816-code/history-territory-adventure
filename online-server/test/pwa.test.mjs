@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+import {existsSync} from 'node:fs';
 import worker from '../dist/server/index.js';
 const origin='https://xn--9t4b56g.com';
 const request=path=>worker.fetch(new Request(origin+path),{});
@@ -16,7 +17,8 @@ test('portal and game expose Apple metadata and a root-scoped service worker',as
  assert.match(await (await request('/offline.html')).text(),/인터넷이 필요해요/);
 });
 function serviceWorker(fetch){const handlers={},reads=[];vm.runInNewContext(sw,{self:{location:{origin},addEventListener:(type,fn)=>handlers[type]=fn},URL,Response,fetch,caches:{match:async key=>{reads.push(key);return new Response('offline page');}}});return {handlers,reads};}
-const sw=await readFile(new URL('../game-source/public/sw.js',import.meta.url),'utf8');
+const sourcePublic=new URL(existsSync(new URL('../game-source/public',import.meta.url))?'../game-source/public/':'../../public/',import.meta.url);
+const sw=await readFile(new URL('sw.js',sourcePublic),'utf8');
 test('offline worker leaves private APIs, writes and third-party games untouched',()=>{
  const {handlers,reads}=serviceWorker(()=>{throw Error('should not fetch')});
  for(const req of [{method:'GET',url:origin+'/api/state'},{method:'POST',url:origin+'/api/auth/login'},{method:'GET',url:'https://other.example/game'}])handlers.fetch({request:req,respondWith:()=>assert.fail('private or cross-origin request intercepted')});
@@ -27,7 +29,7 @@ test('offline navigation has a clear fallback while successful pages always use 
  state=serviceWorker(async()=>new Response('fresh page'));state.handlers.fetch({request:{method:'GET',url:origin+'/',mode:'navigate'},respondWith:p=>output=p});assert.equal(await (await output).text(),'fresh page');assert.equal(state.reads.length,0);
 });
 
-const installSource=await readFile(new URL('../game-source/public/pwa.js',import.meta.url),'utf8');
+const installSource=await readFile(new URL('pwa.js',sourcePublic),'utf8');
 function installUI(userAgent='Android Chrome'){
  const element=()=>({handlers:{},hidden:false,textContent:'',innerHTML:'',open:false,setAttribute(){},addEventListener(type,fn){this.handlers[type]=fn;},showModal(){this.open=true;},close(){this.open=false;}});
  const main=element(),dialog=element(),children={},events={};

@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, extname } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { tempDir, removeDir, startApp, newPlayer, answerRegion, correctIndex } from './helpers.mjs';
 import { QUESTIONS, QUESTION_BY_ID } from '../lib/questions.mjs';
 import { ERAS, ADVANCE_RULES, MISSIONS, MISSION_BY_ID, REGIONS, CARDS, MISSION_WEIGHTING } from '../lib/content.mjs';
@@ -13,7 +13,7 @@ import { openDb } from '../lib/db.mjs';
 import { createGame } from '../lib/game.mjs';
 import { buildPages } from '../scripts/build-pages.mjs';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ORIGINAL_ERAS = ['paleolithic', 'neolithic', 'gojoseon'];
 const NEW_ERAS = ['samguk', 'nambuk', 'goryeo', 'joseon', 'modern', 'republic'];
 

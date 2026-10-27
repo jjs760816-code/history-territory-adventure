@@ -227,7 +227,10 @@ describe('서버 API', () => {
     assert.equal((await p.req('/api/answer', { method: 'POST', raw: '{bad json', headers: { 'content-type': 'application/json' } })).status, 400);
     assert.equal((await p.req('/api/answer', { method: 'POST', raw: 'a=1', headers: { 'content-type': 'application/x-www-form-urlencoded' } })).status, 415);
     assert.equal((await p.req('/api/submissions', { method: 'POST', raw: JSON.stringify({ q: 'x'.repeat(20000) }), headers: { 'content-type': 'application/json' } })).status, 413);
-    const ch = await p.post(`/api/regions/${PALEO_REGIONS[0]}/challenge`);
+    let ch = await p.post(`/api/regions/${PALEO_REGIONS[0]}/challenge`);
+    // 보기 번호 검사는 단답형이 아닌 문제로 확인한다.
+    for (let i=0;ch.json.question.type==='short'&&i<50;i++) ch=await p.post(`/api/regions/${PALEO_REGIONS[0]}/challenge`);
+    assert.notEqual(ch.json.question.type,'short');
     for (const choiceIndex of [-1, 4, 1.5, '0', null]) {
       const r = await p.post('/api/answer', { challengeId: ch.json.challengeId, choiceIndex });
       assert.equal(r.status, 400, String(choiceIndex));

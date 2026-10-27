@@ -150,6 +150,8 @@ export function createApp({ dataDir = process.env.DATA_DIR || join(ROOT, 'data')
     }
     if (method === 'POST' && path === '/api/logout') {
       await readJson(req);
+      // 쿠키만 지우지 않고 서버 세션도 무효로 한다(공용 기기에서 남은 쿠키 복사본으로 다시 들어오지 못하게).
+      game.revokeSession(playerId);
       return send(res, 200, { ok: true }, { 'Set-Cookie': `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0` });
     }
     if (method === 'GET' && path === '/api/state') return send(res, 200, game.state(needPlayer()));
@@ -170,7 +172,7 @@ export function createApp({ dataDir = process.env.DATA_DIR || join(ROOT, 'data')
     }
     if (method === 'POST' && path === '/api/answer') {
       const body = await readJson(req);
-      return send(res, 200, game.answer(needPlayer(), body.challengeId, body.answerText ?? body.choiceIndex));
+      return send(res, 200, game.answer(needPlayer(), body.challengeId, body.answerText ?? body.choiceIndex, { requestId: body.requestId }));
     }
     if(path==='/api/market'&&method==='GET')return send(res,200,game.marketList(needPlayer()));
     const marketRoutes={'/api/market':'marketPost','/api/market/accept':'marketAccept','/api/market/cancel':'marketCancel'};
