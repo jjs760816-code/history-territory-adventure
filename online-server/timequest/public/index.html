@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>잼스 타임퀘스트 · 탐험 시제품</title>
+  <link rel="stylesheet" href="/timequest/style.css">
+  <script type="module" src="/timequest/app.js"></script>
+</head>
+<body>
+  <header class="masthead"><a href="/" class="brand">✦ 잼스 <span>타임퀘스트</span></a><span class="badge">두 시대의 모험 · 0.2</span></header>
+  <main>
+    <section id="auth" hidden class="welcome">
+      <div class="intro"><p class="eyebrow">나의 첫 한국사 탐험</p><h1>시간의 문을 열고,<br>이야기 속으로.</h1><p>땅에 남은 단서를 찾고, 사람들의 이야기를 들어요.<br>작은 발견을 모아 다음 시대의 문을 열어 보세요.</p><canvas id="welcome-map" width="900" height="540" aria-label="숲과 강, 야영지가 있는 탐험 지도 삽화"></canvas><div class="journey"><span>01 구석기</span><i>········</i><span>02 신석기</span></div><p class="note">직접 만든 학습용 상상 삽화 · 수업 전 교사 검토가 필요한 시제품</p></div>
+      <div class="auth-card"><p class="eyebrow">탐험 기록 보관소</p><h2 id="auth-title">이어서 탐험하기</h2><p>로그인하면 이전에 저장한 모험이 이어집니다.</p>
+        <form id="auth-form">
+          <label>아이디<input id="username" name="username" required pattern="[a-zA-Z0-9_]{3,24}" minlength="3" maxlength="24" autocomplete="username" placeholder="영문·숫자·밑줄 3~24자"></label>
+          <label>비밀번호<input id="password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="current-password" placeholder="10자 이상"></label>
+          <label id="nickname-label" hidden>탐험가 별명<input id="nickname" name="nickname" maxlength="16" autocomplete="off" placeholder="실명 대신 별명을 사용하세요"></label>
+          <p id="auth-error" class="error" role="alert"></p><button id="auth-submit" class="primary" type="submit">모험 이어하기 →</button>
+        </form>
+        <button id="auth-toggle" class="text-button">처음 왔나요? 탐험가 등록하기</button><p id="auth-note" class="note">이메일·실명은 받지 않습니다. 시제품에서는 비밀번호 찾기를 지원하지 않으니 테스트용 계정을 사용하세요.</p><a id="site-account" hidden href="/play.html">잼스 계정·비밀번호 관리 →</a>
+      </div>
+    </section>
+    <section id="game" hidden>
+      <div class="game-heading"><div><p class="eyebrow">나의 시간 여행</p><h1><span id="player-name"></span>의 탐험 일지</h1></div><div><span id="save-status" role="status"></span><button id="retry-save" hidden>저장 재시도</button><button id="logout" class="text-button">로그아웃</button></div></div>
+      <div class="stats"><span id="level"></span><progress id="xp-bar" max="100" value="0" aria-label="레벨 경험치"></progress><span id="xp"></span><span id="mission-count"></span></div>
+      <nav class="eras" aria-label="시대 선택"><button id="paleolithic">01 구석기</button><span>→</span><button id="neolithic">02 신석기 🔒</button></nav>
+      <section class="story-banner"><span class="compass" aria-hidden="true">✦</span><div><strong id="story-title"></strong><p id="story"></p></div><button id="next-action" class="primary">첫 단서 찾아가기 →</button></section>
+      <section id="victory" hidden class="victory"><span aria-hidden="true">✧</span><div><h2>두 시대의 탐험가가 되었어요!</h2><p>구석기와 신석기의 도구·먹을거리·집은 어떻게 달랐나요? 가방의 카드를 눌러 배운 내용을 다시 살펴보세요.</p></div></section>
+      <div class="game-layout">
+        <section class="map-card"><div class="map-heading"><div><span class="eyebrow" id="era-label"></span><h2 id="map-title"></h2></div><label class="motion"><input id="reduce-motion" type="checkbox"> 움직임 줄이기</label></div>
+          <canvas id="map" width="900" height="540" tabindex="0" aria-label="탐험 지도. 바닥이나 빛나는 단서를 클릭·터치하거나 방향키와 WASD로 이동하세요. 지도 아래 단서 버튼으로도 이동할 수 있습니다."></canvas>
+          <div id="destinations" class="destinations" aria-label="단서로 이동"></div>
+          <div class="map-controls"><p>바닥·빛나는 단서를 클릭/탭 · 방향키/WASD 이동 · Enter 관찰</p><button id="visit-guide">다음 단서로 이동</button><button id="interact" class="primary" disabled>단서 관찰하기</button><label class="motion"><input id="sound" type="checkbox"> 효과음</label></div><p id="map-message" class="note" role="status">빛나는 첫 단서를 눌러 찾아가 보세요.</p>
+        </section>
+        <aside><section class="panel"><p class="eyebrow">오늘의 탐험</p><h2>이번 시대의 목표</h2><ol id="quests"></ol><p class="note">① 단서로 이동 → ② 관찰 → ③ 도전<br>첫 정답 20 XP · 힌트/오답 뒤 정답 10 XP<br>카드와 시대 해금은 모두 같아요.</p></section><section class="panel inventory"><p class="eyebrow">나의 발견</p><h2>탐험 가방 <span id="item-count"></span></h2><ul id="items"></ul></section><p class="note">미션과 보상은 서버에 저장됩니다. 다른 기기에서도 같은 서버와 계정으로 접속하면 이어집니다.</p></aside>
+      </div>
+    </section>
+    <p id="loading" role="status">탐험 기록을 불러오는 중…</p>
+  </main>
+  <dialog id="quiz" aria-labelledby="quiz-title" aria-describedby="question"><form method="dialog"><button class="close" aria-label="대화 닫기">×</button></form><p class="eyebrow" id="guide-name"></p><h2 id="quiz-title"></h2><p id="question"></p><div id="answers"></div><p id="feedback" role="status"></p><div class="dialog-actions"><button id="take-quiz" class="primary" hidden>단서를 읽었어요 · 도전하기</button><button id="show-hint" hidden>힌트 보기 · 정답 보상 10 XP</button><button id="read-clue" hidden>단서 다시 읽기</button><button id="quiz-done" class="primary" hidden>탐험 계속하기</button></div></dialog>
+  <dialog id="item-dialog" aria-labelledby="item-title"><form method="dialog"><button class="close" aria-label="카드 닫기">×</button></form><p class="eyebrow">내가 발견한 역사</p><h2 id="item-title"></h2><p id="item-description"></p><p class="note">학습용 초안 · 선생님과 함께 사실을 확인해 보세요.</p></dialog>
+  <footer>잼스 타임퀘스트 · 작은 발견이 다음 시대를 엽니다.</footer>
+</body>
+</html>
