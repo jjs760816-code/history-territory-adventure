@@ -1,13 +1,13 @@
 {
   "repository": "jjs760816-code/jams-history-rpg",
-  "commit": "b0b32ac94a2be1ee774f7ba17753723fb0108440",
+  "commit": "15383e68c86d5299fa98442af5cdef671e78c532",
   "version": "0.2.0",
   "sha256": {
-    "public/app.js": "82b15a1b114be05881b377a2c3f8bb137a5161dd029d6afd3d6bb4330fc5f96c",
-    "public/style.css": "e38c7a447199d0bc82042cbd9cb0fd27aeb6714ad53afc7a653bcebbb2690391",
+    "public/app.js": "d60395d427cb7c238a8ef04e6167c60ca00f55a7d7d4d090ce7f8f43ee66c0b5",
+    "public/style.css": "f3d115edadd197a0081ccf5b1047d30583db40d7cb4fd39cacc261f21a66c3f3",
     "public/map.js": "4a21c13f262015a7ae6824bb683205a0f4df86fcb856c5058b975f00d4583824",
     "public/movement.js": "9ecb9c7d3c5c6936a53f2d9534ff94b30d28d839487ac7f401e26f4142a7ee0d",
-    "public/index.html": "0a8fa6d561dac7ea08500e4985b54fff29acb3aea2fbe3486420cba5e69d1249",
+    "public/index.html": "6466f50d76c76d1242ee24344dbce50521ea2aff9888aee22f9fd6bd09317669",
     "server/world.js": "2285b26605e3882604b28068dd92f5fbfcf8d56c8cefd88fc7917f68ae4222ef"
   }
 }

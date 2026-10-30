@@ -19,11 +19,12 @@
           <label id="nickname-label" hidden>탐험가 별명<input id="nickname" name="nickname" maxlength="16" autocomplete="off" placeholder="실명 대신 별명을 사용하세요"></label>
           <p id="auth-error" class="error" role="alert"></p><button id="auth-submit" class="primary" type="submit">모험 이어하기 →</button>
         </form>
-        <button id="auth-toggle" class="text-button">처음 왔나요? 탐험가 등록하기</button><p id="auth-note" class="note">이메일·실명은 받지 않습니다. 시제품에서는 비밀번호 찾기를 지원하지 않으니 테스트용 계정을 사용하세요.</p><a id="site-account" hidden href="/play.html">잼스 계정·비밀번호 관리 →</a>
+        <button id="auth-toggle" class="text-button">처음 왔나요? 탐험가 등록하기</button><p id="auth-note" class="note">이메일·실명은 받지 않습니다. 시제품에서는 비밀번호 찾기를 지원하지 않으니 테스트용 계정을 사용하세요.</p><a id="site-account" hidden href="/play.html">잼스 계정·비밀번호 관리 →</a><p><a id="admin-login" hidden target="_top" href="/signin-with-chatgpt?return_to=%2Ftimequest%2F%3Fadmin-login%3D1">관리자 · ChatGPT로 로그인</a></p><div id="admin-picker" hidden><label for="admin-account">이어서 사용할 관리자 계정</label><select id="admin-account"></select><button id="admin-continue" type="button" class="primary">관리자로 들어가기</button></div>
       </div>
     </section>
     <section id="game" hidden>
       <div class="game-heading"><div><p class="eyebrow">나의 시간 여행</p><h1><span id="player-name"></span>의 탐험 일지</h1></div><div><span id="save-status" role="status"></span><button id="retry-save" hidden>저장 재시도</button><button id="logout" class="text-button">로그아웃</button></div></div>
+      <section id="account-tools" hidden class="account-tools" aria-label="관리자 및 학생 체험"><strong id="account-role"></strong><button id="preview-start" hidden>가상 학생으로 플레이</button><button id="preview-return" hidden>관리자로 돌아가기</button><a id="student-management" hidden href="/play.html">학생 계정 관리 →</a><p id="preview-notice" hidden>관리자 전용 가상 학생 체험이에요. 체험 기록은 별도로 저장되며 실제 학생 기록은 바뀌지 않아요.</p></section>
       <div class="stats"><span id="level"></span><progress id="xp-bar" max="100" value="0" aria-label="레벨 경험치"></progress><span id="xp"></span><span id="mission-count"></span></div>
       <nav class="eras" aria-label="시대 선택"><button id="paleolithic">01 구석기</button><span>→</span><button id="neolithic">02 신석기 🔒</button></nav>
       <section class="story-banner"><span class="compass" aria-hidden="true">✦</span><div><strong id="story-title"></strong><p id="story"></p></div><button id="next-action" class="primary">첫 단서 찾아가기 →</button></section>

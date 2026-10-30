@@ -20,7 +20,7 @@ export async function timequestRoute({db,game,path,body,method,request,env,token
     db.prepare('INSERT INTO timequest_progress(player_id,data) VALUES(?,?) ON CONFLICT(player_id) DO UPDATE SET data=excluded.data').run(id,JSON.stringify(p));
     return p;
   };
-  const user=id=>({id,username:accountFor(db,id).username,nickname:db.prepare('SELECT nickname FROM players WHERE id=?').get(id).nickname});
+  const user=id=>({id,username:accountFor(db,id).username,role:accountFor(db,id).role,nickname:db.prepare('SELECT nickname FROM players WHERE id=?').get(id).nickname});
   if(method==='POST'&&['login','register'].includes(action)){
     const out=await authRoute({db,game,path:'/api/auth/'+action,body,method,request,env,token,cookie});
     const newToken=out.headers['Set-Cookie'].split(';')[0].slice('history_session='.length);

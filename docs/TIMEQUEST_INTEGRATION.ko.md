@@ -28,7 +28,7 @@ cd online-server
 pnpm install --frozen-lockfile
 npm run build
 npm run validate
-node --test test/worker.test.mjs test/timequest.test.mjs
+node --test test/*.test.mjs
 ```
 
 브라우저 도구가 있으면 `node scripts/timequest-browser.mjs`로 **빌드된 실제 Worker**를 브라우저 요청에 연결해 검사한다. `BROWSER_DRIVER`에 Playwright 모듈 경로, `CHROMIUM_PATH`에 Chromium 실행 파일을 지정할 수 있다. `ARTIFACT_DIR`가 있으면 화면을 저장한다. 모든 요청은 테스트용 메모리 Bucket으로 처리하며 라이브 사이트에 보내지 않는다.
@@ -49,7 +49,7 @@ cd online-server
 node scripts/sync-timequest.mjs /workspace/jams-history-rpg
 npm run build
 npm run validate
-node --test test/worker.test.mjs test/timequest.test.mjs
+node --test test/*.test.mjs
 ```
 
 일반 빌드는 원본 체크아웃 없이 저장된 스냅샷만으로 가능하다. `timequest/public/`의 수정은 동기화 시 교체되므로 화면 수정은 원본 저장소에서 진행한다. Worker 인증·저장 어댑터는 `worker/source/timequest.mjs`에서 관리한다.
@@ -61,3 +61,5 @@ node --test test/worker.test.mjs test/timequest.test.mjs
 사용자는 잼스.com 연결을 요청했다. 다만 이 작업의 도구 목록에는 기존 사이트를 게시하는 도구/연결이 제공되지 않아, 빌드 산출물 검증과 실제 게시를 구분해야 한다. 게시 수단이 준비되면 현재 라이브 버전과 바인딩을 확인하고 해당 사이트에 산출물을 게시한다. 복구는 이전 Worker 버전으로 되돌린다. 새 테이블은 기존 기능에서 참조하지 않으므로 사용자 데이터나 새 테이블을 삭제할 필요가 없다.
 
 게시 후 실제 도메인에서 홈페이지 카드·로그인·미션 1개·로그아웃/다른 기기 이어하기와 기존 게임 접속을 확인해야 한다. 현재의 가상 HTTPS 브라우저 검사는 실제 배포 검증을 대신하지 않는다. 콘텐츠 원문 대조, 실제 교사·학생 검수는 후속으로 남아 있다.
+
+관리자·가상 학생 로그인 화면과 검증 결과는 [ADMIN_SIMULATION.ko.md](ADMIN_SIMULATION.ko.md)를 참고한다. 기존 서버의 관리자 인증과 전용 학생 체험을 재사용한다.

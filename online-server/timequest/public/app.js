@@ -4,6 +4,7 @@ import { apiRoot, sharedAccount } from './runtime.js';
 const $ = id => document.getElementById(id);
 let world, user, progress, registering = false, busy = false, dirty = null;
 let position = { x: 24, y: 70 }, path = [], eraId, lastTime = 0, quizMission, selectedId, audio;
+let previewActive=false, accountEpoch=0;
 const canvas = $('map'), ctx = canvas.getContext('2d');
 $('reduce-motion').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const message = text => { $('map-message').textContent = text; };
@@ -25,10 +26,10 @@ function tone() {
     }
   }).catch(() => {});
 }
-async function api(endpoint, data) {
+async function api(endpoint, data, root=apiRoot) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
   try {
-    const response = await fetch(apiRoot + endpoint, { signal:controller.signal, ...(data === undefined ? {} : { method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data) }) });
+    const response = await fetch(root + endpoint, { signal:controller.signal, ...(data === undefined ? {} : { method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data) }) });
     const result = await response.json();
     if (!response.ok) {
       if (result.progress) progress = result.progress;
@@ -36,7 +37,7 @@ async function api(endpoint, data) {
         user=null;path=[];$('quiz').close();$('item-dialog').close();$('game').hidden=true;$('auth').hidden=false;
         $('auth-error').textContent='로그인이 만료되었어요. 다시 로그인해 주세요.';
       }
-      throw new Error(result.message || result.error || '요청에 실패했어요.');
+      throw Object.assign(new Error(result.message || result.error || '요청에 실패했어요.'),{status:response.status,code:result.error});
     }
     return result;
   } catch (error) {
@@ -46,6 +47,12 @@ async function api(endpoint, data) {
 }
 function render() {
   if (!user) return;
+  const admin=sharedAccount&&user.role==='admin';
+  $('account-tools').hidden=!admin&&!previewActive;
+  $('account-role').textContent=admin?'관리자 계정':'가상 학생 체험 중';
+  $('preview-start').hidden=!admin;$('student-management').hidden=!admin;
+  $('preview-return').hidden=!previewActive;$('preview-notice').hidden=!previewActive;
+  $('preview-start').disabled=$('preview-return').disabled=busy||!!dirty||path.length>0;
   $('player-name').textContent=user.nickname;
   $('level').textContent='Lv. '+(Math.floor(progress.xp/100)+1);
   $('xp').textContent=progress.xp+' XP';$('xp-bar').value=progress.xp%100;
@@ -93,11 +100,39 @@ function showItem(item) {
   $('item-dialog').showModal();
 }
 function enter(data) {
+  previewActive=false;const epoch=++accountEpoch;
   user=data.user;progress=data.progress;eraId=progress.era;position={...progress.positions[eraId]};
   path=[];dirty=null;selectedId=nextMission()?.id;
   $('password').value='';$('auth-error').textContent='';$('auth').hidden=true;$('game').hidden=false;
   status('이전 탐험 기록을 불러왔어요');message('빛나는 단서나 ‘다음 단서 찾아가기’를 눌러 탐험을 시작해요.');render();
+  if(sharedAccount&&user.role==='student')void api('auth/preview-status',undefined,'/api/').then(result=>{
+    if(epoch===accountEpoch&&user){previewActive=!!result.active;render();}
+  }).catch(()=>{if(epoch===accountEpoch&&user)message('체험 복귀 상태를 확인하지 못했어요. 새로고침으로 다시 확인해 주세요.');});
 }
+async function accountAction(endpoint){
+  if(!sharedAccount||busy||dirty||path.length)return;
+  busy=true;render();
+  try{await api(endpoint,{},'/api/');const session=await api('session');if(!session.user)throw new Error('로그인을 다시 확인해 주세요.');enter(session);}
+  catch(error){message(error.message);}
+  finally{busy=false;render();}
+}
+$('preview-start').onclick=()=>accountAction('admin/preview-start');
+$('preview-return').onclick=()=>accountAction('auth/preview-return');
+async function ownerLogin(username){
+  try{await api('auth/owner-session',username?{username}:{},'/api/');$('admin-picker').hidden=true;const url=new URL(location.href);url.searchParams.delete('admin-login');history.replaceState(null,'',url.pathname+url.search+url.hash);return true;}
+  catch(error){
+    if(error.code!=='choose_admin')throw error;
+    const result=await api('auth/owner-accounts',undefined,'/api/');
+    $('admin-account').replaceChildren(...result.accounts.map(account=>{const option=document.createElement('option');option.value=account.username;option.textContent=account.username;return option;}));
+    $('admin-picker').hidden=false;$('auth-error').textContent='이어서 사용할 관리자 계정을 골라 주세요.';return false;
+  }
+}
+$('admin-continue').onclick=async()=>{
+  $('admin-continue').disabled=true;
+  try{if(await ownerLogin($('admin-account').value))enter(await api('session'));}
+  catch(error){$('auth-error').textContent=error.message;}
+  finally{$('admin-continue').disabled=false;}
+};
 $('auth-toggle').onclick=()=>{
   registering=!registering;$('nickname-label').hidden=!registering||sharedAccount;$('nickname').required=registering&&!sharedAccount;
   $('auth-title').textContent=registering?'새로운 탐험가 등록':'이어서 탐험하기';
@@ -228,7 +263,7 @@ if(sharedAccount){
   $('username').pattern='[a-zA-Z0-9_가-힣]{3,16}';$('username').maxLength=16;$('username').placeholder='기존 잼스 아이디 (한글·영문·숫자 3~16자)';
   $('password').minLength=8;$('password').maxLength=64;$('password').placeholder='기존 잼스 비밀번호 (8~64자)';
   $('auth-note').textContent='역사 탐험 1과 같은 잼스 계정으로 로그인해요. 처음이면 아이디를 만들 수 있어요. 타임퀘스트의 XP·카드는 별도로 보관해요.';
-  $('site-account').hidden=false;$('logout').textContent='잼스 계정 로그아웃';
+  $('site-account').hidden=false;$('admin-login').hidden=false;$('logout').textContent='잼스 계정 로그아웃';
 }
 function frame(time) {
   const delta=Math.min((time-lastTime)/1000,.05);lastTime=time;
@@ -252,7 +287,13 @@ function frame(time) {
 requestAnimationFrame(frame);
 try{
   world=(await api('world')).eras;
-  const session=await api('session');
+  let chooseAdmin=false;
+  if(sharedAccount&&new URL(location.href).searchParams.has('admin-login')){
+    const options=await api('auth/options',undefined,'/api/');
+    if(!options.isOwner)throw new Error('관리자 본인 확인이 필요해요. 아래 ChatGPT 관리자 로그인 링크로 들어가 주세요.');
+    chooseAdmin=!(await ownerLogin());
+  }
+  const session=chooseAdmin?{user:null}:await api('session');
   if(session.user)enter(session);else $('auth').hidden=false;
   $('loading').hidden=true;
 }catch(error){if(world){$('loading').hidden=true;$('auth').hidden=false;$('auth-error').textContent=error.message;}else $('loading').textContent='서버에 연결할 수 없어요. 연결을 확인하고 페이지를 새로 고쳐 주세요.';}

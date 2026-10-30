@@ -17,5 +17,5 @@ jobs:
       - run: npm test
       - run: pnpm install --frozen-lockfile
         working-directory: online-server
-      - run: npm run build && npm run validate && node --test test/worker.test.mjs test/timequest.test.mjs
+      - run: npm run build && npm run validate && node --test test/*.test.mjs
         working-directory: online-server
